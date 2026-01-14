@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { Menu, X, AlertCircle, LogIn } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import Link from "next/link"
 
 export function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
@@ -49,15 +50,19 @@ export function Header() {
             </Button>
 
             {/* Login Button */}
-            <Button variant="ghost" className="hidden sm:inline-flex text-eco-primary hover:bg-eco-primary/10">
-              <LogIn className="w-4 h-4 mr-2" />
-              Iniciar sesión
-            </Button>
+            <Link href="/login">
+              <Button variant="ghost" className="hidden sm:inline-flex text-eco-primary hover:bg-eco-primary/10">
+                <LogIn className="w-4 h-4 mr-2" />
+                Iniciar sesión
+              </Button>
+            </Link>
 
             {/* Crear Cuenta - Primary Action */}
-            <Button className="hidden sm:inline-flex bg-eco-primary hover:bg-eco-primary-dark text-white font-bold shadow-md">
-              Crear cuenta
-            </Button>
+            <Link href="/register">
+              <Button className="hidden sm:inline-flex bg-eco-primary hover:bg-eco-primary-dark text-white font-bold shadow-md">
+                Crear cuenta
+              </Button>
+            </Link>
 
             {/* Mobile Menu Button */}
             <button
@@ -89,16 +94,20 @@ export function Header() {
               >
                 Ver reportes
               </Button>
-              <Button variant="ghost" className="w-full text-eco-primary hover:bg-eco-primary/10">
-                <LogIn className="w-4 h-4 mr-2" />
-                Iniciar sesión
-              </Button>
-              <Button
-                className="w-full bg-eco-primary hover:bg-eco-primary-dark text-white font-bold"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                Crear cuenta
-              </Button>
+              <Link href="/login">
+                <Button variant="ghost" className="w-full text-eco-primary hover:bg-eco-primary/10">
+                  <LogIn className="w-4 h-4 mr-2" />
+                  Iniciar sesión
+                </Button>
+              </Link>
+              <Link href="/register">
+                <Button
+                  className="w-full bg-eco-primary hover:bg-eco-primary-dark text-white font-bold"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Crear cuenta
+                </Button>
+              </Link>
             </div>
           </nav>
         )}
