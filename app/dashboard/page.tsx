@@ -1,6 +1,8 @@
 "use client"
 
-import { useState } from "react"
+import { useAuth } from "@/app/context/AuthContext"
+import api from "@/app/services/api"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import {
@@ -24,6 +26,8 @@ import {
   TrendingUp,
   Award,
   BarChart3,
+  Edit,
+  MoreVertical
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -52,7 +56,9 @@ interface Alert {
   likes: number
   comentarios: number
   vistas: number
+  vistas: number
   estado: "activo" | "en_proceso" | "resuelto"
+  id_usuario?: number
 }
 
 // Datos de ejemplo de alertas
@@ -115,17 +121,30 @@ const alertasEjemplo: Alert[] = [
   },
 ]
 
-// Iconos por categoría
-const iconosCategoria = {
+const CATEGORY_MAP: Record<number, string> = {
+  1: "basura",
+  2: "deforestacion",
+  3: "contaminacion",
+  4: "ruido",
+  5: "fauna",
+  6: "aire",
+  7: "infraestructura"
+};
+
+// Iconos por categoría (Map keys to IDs for easier lookup or mapped strings)
+const iconosCategoria: Record<string, any> = {
   fauna: Dog,
   basura: Trash2,
   quema: Flame,
   deforestacion: TreePine,
   contaminacion: Droplets,
+  ruido: AlertCircle, // Fallback
+  aire: AlertCircle, // Fallback
+  infraestructura: Home // Fallback
 }
 
 // Colores por estado
-const coloresEstado = {
+const coloresEstado: Record<string, string> = {
   activo: "bg-eco-error/10 text-eco-error border-eco-error/20",
   en_proceso: "bg-eco-warning/10 text-eco-warning border-eco-warning/20",
   resuelto: "bg-eco-success/10 text-eco-success border-eco-success/20",
@@ -133,30 +152,69 @@ const coloresEstado = {
 
 export default function DashboardPage() {
   const router = useRouter()
-  const [usuario] = useState({
-    nombre: "Juan Pérez",
-    email: "juan.perez@ejemplo.com",
-    avatar: "",
-    reportes: 12,
-    nivel: "Ciudadano Activo",
-  })
+  const { user, logout } = useAuth()
 
-  const [alertas, setAlertas] = useState<Alert[]>(alertasEjemplo)
+  // No longer needed local state for user, usage context
+
+  const [alertas, setAlertas] = useState<Alert[]>([])
+  const [loading, setLoading] = useState(true)
   const [filtroCategoria, setFiltroCategoria] = useState<string>("todas")
   const [busqueda, setBusqueda] = useState("")
 
+  useEffect(() => {
+    const fetchReports = async () => {
+      try {
+        const res = await api.get('/reportes/publicos');
+        // Map backend data to frontend interface
+        const mappedAlerts = res.data.data.map((r: any) => ({
+          id: r.id_reporte,
+          titulo: r.descripcion ? r.descripcion.substring(0, 50) + "..." : "Reporte sin título",
+          descripcion: r.descripcion,
+          categoria: CATEGORY_MAP[r.id_categoria] || "general",
+          ubicacion: `Lat: ${r.latitud}, Lng: ${r.longitud}`,
+          fecha: new Date(r.creado_en).toLocaleDateString(),
+          autor: `${r.autor_nombre || 'Anónimo'} ${r.autor_apellido || ''}`,
+          imagen: r.imagen ? `${(process.env.NEXT_PUBLIC_API_URL || '').replace('/api', '')}${r.imagen}` : undefined,
+          likes: 0,
+          comentarios: 0,
+          vistas: 0,
+          estado: r.estado === 'por aprobar' ? 'en_proceso' : r.estado, // Map backend status
+          id_usuario: r.id_usr
+        }));
+        setAlertas(mappedAlerts);
+      } catch (error) {
+        console.error("Error fetching reports:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchReports();
+  }, []);
+
   const handleLogout = () => {
-    localStorage.removeItem("user")
-    router.push("/")
+    logout()
+  }
+
+  const deleteReport = async (id: number) => {
+    if (!confirm("¿Estás seguro de que deseas eliminar este reporte?")) return;
+    try {
+      await api.delete(`/reportes/${id}`);
+      setAlertas(prev => prev.filter(a => a.id !== id));
+    } catch (error) {
+      console.error("Error al eliminar", error);
+      alert("No se pudo eliminar el reporte");
+    }
   }
 
   // Filtrar alertas
   const alertasFiltradas = alertas.filter((alerta) => {
+    // Standard filters
     const coincideCategoria = filtroCategoria === "todas" || alerta.categoria === filtroCategoria
     const coincideBusqueda =
       alerta.titulo.toLowerCase().includes(busqueda.toLowerCase()) ||
       alerta.descripcion.toLowerCase().includes(busqueda.toLowerCase()) ||
       alerta.ubicacion.toLowerCase().includes(busqueda.toLowerCase())
+
     return coincideCategoria && coincideBusqueda
   })
 
@@ -210,12 +268,9 @@ export default function DashboardPage() {
                 <DropdownMenuTrigger asChild>
                   <button className="hover:bg-gray-100 rounded-full p-1 transition-colors">
                     <Avatar className="w-10 h-10 border-2 border-eco-primary">
-                      <AvatarImage src={usuario.avatar || "/placeholder.svg"} />
+                      <AvatarImage src={user?.avatar || "/placeholder.svg"} />
                       <AvatarFallback className="bg-eco-primary text-white font-semibold">
-                        {usuario.nombre
-                          .split(" ")
-                          .map((n) => n[0])
-                          .join("")}
+                        {user?.nombre ? user.nombre[0] : "U"}
                       </AvatarFallback>
                     </Avatar>
                   </button>
@@ -224,17 +279,14 @@ export default function DashboardPage() {
                   <DropdownMenuLabel className="pb-0">
                     <div className="flex items-center gap-3 py-2">
                       <Avatar className="w-12 h-12">
-                        <AvatarImage src={usuario.avatar || "/placeholder.svg"} />
+                        <AvatarImage src={user?.avatar || "/placeholder.svg"} />
                         <AvatarFallback className="bg-eco-primary text-white">
-                          {usuario.nombre
-                            .split(" ")
-                            .map((n) => n[0])
-                            .join("")}
+                          {user?.nombre ? user.nombre[0] : "U"}
                         </AvatarFallback>
                       </Avatar>
                       <div>
-                        <p className="font-semibold text-gray-900">{usuario.nombre}</p>
-                        <p className="text-xs text-gray-500">{usuario.nivel}</p>
+                        <p className="font-semibold text-gray-900">{user?.nombre || "Usuario"} {user?.apellido || ""}</p>
+                        <p className="text-xs text-gray-500">{user?.rol || "Invitado"}</p>
                       </div>
                     </div>
                   </DropdownMenuLabel>
@@ -274,25 +326,25 @@ export default function DashboardPage() {
                 className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-100 transition-colors"
               >
                 <Avatar className="w-9 h-9">
-                  <AvatarImage src={usuario.avatar || "/placeholder.svg"} />
+                  <AvatarImage src={user?.avatar || "/placeholder.svg"} />
                   <AvatarFallback className="bg-eco-primary text-white text-sm">
-                    {usuario.nombre
-                      .split(" ")
-                      .map((n) => n[0])
-                      .join("")}
+                    {user?.nombre ? user.nombre[0] : "U"}
                   </AvatarFallback>
                 </Avatar>
-                <span className="font-semibold text-gray-900">{usuario.nombre}</span>
+                <span className="font-semibold text-gray-900">{user?.nombre || "Usuario"}</span>
               </Link>
 
               {/* Navegación */}
               <div className="space-y-1 mt-2">
-                <button className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-100 transition-colors w-full text-left">
+                <Link
+                  href="/dashboard/my-reports"
+                  className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-100 transition-colors w-full text-left"
+                >
                   <div className="w-9 h-9 bg-eco-primary/10 rounded-full flex items-center justify-center">
                     <AlertCircle className="w-5 h-5 text-eco-primary" />
                   </div>
                   <span className="font-medium text-gray-700">Mis reportes</span>
-                </button>
+                </Link>
 
                 <button className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-100 transition-colors w-full text-left">
                   <div className="w-9 h-9 bg-blue-100 rounded-full flex items-center justify-center">
@@ -323,12 +375,9 @@ export default function DashboardPage() {
             <div className="bg-white rounded-lg shadow p-4">
               <div className="flex items-center gap-3 mb-3">
                 <Avatar className="w-10 h-10">
-                  <AvatarImage src={usuario.avatar || "/placeholder.svg"} />
+                  <AvatarImage src={user?.avatar || "/placeholder.svg"} />
                   <AvatarFallback className="bg-eco-primary text-white">
-                    {usuario.nombre
-                      .split(" ")
-                      .map((n) => n[0])
-                      .join("")}
+                    {user?.nombre ? user.nombre[0] : "U"}
                   </AvatarFallback>
                 </Avatar>
                 <Button
@@ -367,7 +416,9 @@ export default function DashboardPage() {
             </div>
 
             {/* Lista de reportes estilo posts de Facebook */}
-            {alertasFiltradas.length === 0 ? (
+            {loading ? (
+              <div className="flex justify-center p-12"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-eco-primary"></div></div>
+            ) : alertasFiltradas.length === 0 ? (
               <div className="bg-white rounded-lg shadow p-12 text-center">
                 <AlertCircle className="w-16 h-16 text-gray-300 mx-auto mb-4" />
                 <h3 className="text-xl font-semibold text-gray-700 mb-2">No hay reportes</h3>
@@ -375,7 +426,7 @@ export default function DashboardPage() {
               </div>
             ) : (
               alertasFiltradas.map((alerta) => {
-                const IconoCategoria = iconosCategoria[alerta.categoria as keyof typeof iconosCategoria] || AlertCircle
+                const IconoCategoria = iconosCategoria[alerta.categoria] || AlertCircle
                 return (
                   <div key={alerta.id} className="bg-white rounded-lg shadow hover:shadow-lg transition-shadow">
                     {/* Header del post */}
@@ -399,9 +450,32 @@ export default function DashboardPage() {
                           </div>
                         </div>
                       </div>
-                      <Badge className={`${coloresEstado[alerta.estado]} capitalize`}>
-                        {alerta.estado.replace("_", " ")}
-                      </Badge>
+                      <div className="flex items-center gap-2">
+                        <Badge className={`${coloresEstado[alerta.estado]} capitalize`}>
+                          {alerta.estado.replace("_", " ")}
+                        </Badge>
+
+                        {/* Dropdown for Edit/Delete if owner */}
+                        {user && Number(user.id_usr) === Number(alerta.id_usuario) && (
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => router.push(`/dashboard/edit-report/${alerta.id}`)}>
+                                <Edit className="mr-2 h-4 w-4" />
+                                Editar
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => deleteReport(alerta.id)} className="text-red-600">
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Eliminar
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        )}
+                      </div>
                     </div>
 
                     {/* Contenido del post */}
@@ -472,7 +546,7 @@ export default function DashboardPage() {
                       </div>
                       <span className="text-sm text-gray-700">Reportes</span>
                     </div>
-                    <span className="font-bold text-eco-primary">{usuario.reportes}</span>
+                    <span className="font-bold text-eco-primary">--</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">

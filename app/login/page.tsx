@@ -9,9 +9,12 @@ import { Eye, EyeOff, Mail, Lock, ArrowLeft, CheckCircle2, AlertCircle, Leaf } f
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { useAuth } from "@/app/context/AuthContext"
+import api from "@/app/services/api"
 
 export default function LoginPage() {
   const router = useRouter()
+  const { login } = useAuth()
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [formData, setFormData] = useState({
@@ -88,37 +91,31 @@ export default function LoginPage() {
       return
     }
 
-    // Simulación de llamada al backend
+    // Llamada al backend real
     try {
-  const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/login`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      email: formData.correo,
-      password: formData.contrasena
-    })
-  })
+      const response = await api.post('/auth/login', {
+        correo: formData.correo,
+        contrasena: formData.contrasena
+      });
 
-  const data = await response.json()
+      const { token, usuario } = response.data;
 
-  if (!response.ok) {
-    throw new Error(data.message || 'Credenciales inválidas')
-  }
+      // Usar el contexto para guardar sesión
+      login(token, usuario);
 
-  // Guardar token y usuario
-  localStorage.setItem('token', data.token)
-  localStorage.setItem('user', JSON.stringify(data.user))
+      // Redirigir al dashboard
+      router.push("/dashboard");
 
-  // Redirigir al dashboard
-  router.push("/dashboard")
-} catch (error: any) {
-  setErrors({
-    ...errors,
-    submit: error.message || "Error al iniciar sesión. Verifica tus credenciales.",
-  })
-} finally {
-  setIsLoading(false)
-}
+    } catch (error: any) {
+      console.error(error);
+      const message = error.response?.data?.error || "Error al iniciar sesión. Verifica tus credenciales.";
+      setErrors({
+        ...errors,
+        submit: message,
+      });
+    } finally {
+      setIsLoading(false);
+    }
   }
 
   return (
@@ -170,13 +167,12 @@ export default function LoginPage() {
                     value={formData.correo}
                     onChange={(e) => handleChange("correo", e.target.value)}
                     onBlur={() => handleBlur("correo")}
-                    className={`h-12 pl-10 transition-all ${
-                      errors.correo && touchedFields.correo
+                    className={`h-12 pl-10 transition-all ${errors.correo && touchedFields.correo
                         ? "border-eco-error focus:ring-eco-error"
                         : isFieldValid("correo")
                           ? "border-eco-success focus:ring-eco-success"
                           : "border-eco-gray-light focus:ring-eco-primary"
-                    }`}
+                      }`}
                     placeholder="tucorreo@ejemplo.com"
                   />
                   {isFieldValid("correo") && (
@@ -212,13 +208,12 @@ export default function LoginPage() {
                     value={formData.contrasena}
                     onChange={(e) => handleChange("contrasena", e.target.value)}
                     onBlur={() => handleBlur("contrasena")}
-                    className={`h-12 pl-10 pr-10 transition-all ${
-                      errors.contrasena && touchedFields.contrasena
+                    className={`h-12 pl-10 pr-10 transition-all ${errors.contrasena && touchedFields.contrasena
                         ? "border-eco-error focus:ring-eco-error"
                         : isFieldValid("contrasena")
                           ? "border-eco-success focus:ring-eco-success"
                           : "border-eco-gray-light focus:ring-eco-primary"
-                    }`}
+                      }`}
                     placeholder="Ingresa tu contraseña"
                   />
                   <button

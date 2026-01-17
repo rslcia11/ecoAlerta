@@ -10,38 +10,23 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Checkbox } from "@/components/ui/checkbox" // Import Checkbox
+import { Checkbox } from "@/components/ui/checkbox"
+import { useAuth } from "@/app/context/AuthContext"
+import api from "@/app/services/api"
 
-// Datos simulados de Ecuador - En producción cargar desde API
-const provincias = [
-  { id: 1, nombre: "Loja" },
-  { id: 2, nombre: "Azuay" },
-  { id: 3, nombre: "Pichincha" },
-  { id: 4, nombre: "Guayas" },
-]
+interface Provincia {
+  id_provincia: number;
+  nombre: string;
+}
 
-const ciudadesPorProvincia: Record<number, { id: number; nombre: string }[]> = {
-  1: [
-    { id: 1, nombre: "Loja" },
-    { id: 2, nombre: "Catamayo" },
-    { id: 3, nombre: "Cariamanga" },
-  ],
-  2: [
-    { id: 4, nombre: "Cuenca" },
-    { id: 5, nombre: "Gualaceo" },
-  ],
-  3: [
-    { id: 6, nombre: "Quito" },
-    { id: 7, nombre: "Cayambe" },
-  ],
-  4: [
-    { id: 8, nombre: "Guayaquil" },
-    { id: 9, nombre: "Durán" },
-  ],
+interface Ciudad {
+  id_ciudad: number;
+  nombre: string;
 }
 
 export default function RegisterPage() {
   const router = useRouter()
+  const { login } = useAuth()
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
@@ -61,14 +46,37 @@ export default function RegisterPage() {
     terminos: false, // Added for the new update
   })
 
-  const [ciudadesDisponibles, setCiudasDisponibles] = useState<{ id: number; nombre: string }[]>([])
+  const [provincias, setProvincias] = useState<Provincia[]>([])
+  const [ciudadesDisponibles, setCiudasDisponibles] = useState<Ciudad[]>([])
+
+  // Cargar provincias al inicio
+  useEffect(() => {
+    const fetchProvincias = async () => {
+      try {
+        const res = await api.get('/catalogos/provincias');
+        setProvincias(res.data);
+      } catch (error) {
+        console.error("Error cargando provincias:", error);
+      }
+    };
+    fetchProvincias();
+  }, []);
 
   // Cargar ciudades cuando cambia la provincia
   useEffect(() => {
     if (formData.provincia) {
-      const provinciaId = Number.parseInt(formData.provincia)
-      setCiudasDisponibles(ciudadesPorProvincia[provinciaId] || [])
-      // Resetear ciudad cuando cambia provincia
+      const fetchCiudades = async () => {
+        try {
+          const res = await api.get(`/catalogos/ciudades?id_provincia=${formData.provincia}`);
+          setCiudasDisponibles(res.data);
+        } catch (error) {
+          console.error("Error cargando ciudades:", error);
+          setCiudasDisponibles([]);
+        }
+      };
+
+      fetchCiudades();
+      // Resetear ciudad solo si cambia la provincia (mejor control manual si se necesitara)
       setFormData((prev) => ({ ...prev, id_ciudad: "" }))
     } else {
       setCiudasDisponibles([])
@@ -185,38 +193,35 @@ export default function RegisterPage() {
 
     setIsLoading(true)
 
-    // Simular llamada API
+    // Llamada API Real
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/register`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      nombre: formData.nombre,
-      apellido: formData.apellido,
-      correo: formData.correo,
-      contrasena: formData.contrasena,
-      cedula: formData.cedula,
-      telefono: formData.telefono,
-      id_ciudad: Number(formData.id_ciudad)
-    })
-  })
+      const response = await api.post('/auth/register', {
+        nombre: formData.nombre,
+        apellido: formData.apellido,
+        correo: formData.correo,
+        contrasena: formData.contrasena,
+        cedula: formData.cedula,
+        telefono: formData.telefono,
+        id_ciudad: Number(formData.id_ciudad)
+      });
 
-  const data = await response.json()
+      const { token, usuario, user } = response.data; // Backend might return user or usuario
+      const userData = usuario || user;
 
-  if (!response.ok) {
-    throw new Error(data.message || 'Error al registrar')
-  }
+      // Auto-login
+      if (token && userData) {
+        login(token, userData);
+        router.push("/dashboard"); // Redirect directly to dashboard
+      } else {
+        router.push("/register/success");
+      }
 
-  // Guardar token en localStorage
-  localStorage.setItem('token', data.token)
-  localStorage.setItem('user', JSON.stringify(data.user))
-
-      router.push("/register/success")
-    } catch (error) {
-      console.error("Error:", error)
-      setErrors({ submit: "Error al crear la cuenta. Inténtalo de nuevo." })
+    } catch (error: any) {
+      console.error("Error:", error);
+      const message = error.response?.data?.error || error.response?.data?.message || "Error al crear la cuenta.";
+      setErrors({ submit: message });
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
   }
 
@@ -304,13 +309,12 @@ export default function RegisterPage() {
                         value={formData.nombre}
                         onChange={(e) => handleChange("nombre", e.target.value)}
                         onBlur={() => handleBlur("nombre")}
-                        className={`h-12 transition-all ${
-                          errors.nombre && touchedFields.nombre
+                        className={`h-12 transition-all ${errors.nombre && touchedFields.nombre
                             ? "border-eco-error focus:ring-eco-error"
                             : isFieldValid("nombre")
                               ? "border-eco-success focus:ring-eco-success"
                               : "border-eco-gray-light focus:ring-eco-primary"
-                        }`}
+                          }`}
                         placeholder="Ej: Juan"
                       />
                       {isFieldValid("nombre") && (
@@ -336,13 +340,12 @@ export default function RegisterPage() {
                         value={formData.apellido}
                         onChange={(e) => handleChange("apellido", e.target.value)}
                         onBlur={() => handleBlur("apellido")}
-                        className={`h-12 transition-all ${
-                          errors.apellido && touchedFields.apellido
+                        className={`h-12 transition-all ${errors.apellido && touchedFields.apellido
                             ? "border-eco-error focus:ring-eco-error"
                             : isFieldValid("apellido")
                               ? "border-eco-success focus:ring-eco-success"
                               : "border-eco-gray-light focus:ring-eco-primary"
-                        }`}
+                          }`}
                         placeholder="Ej: Pérez"
                       />
                       {isFieldValid("apellido") && (
@@ -378,13 +381,12 @@ export default function RegisterPage() {
                       value={formData.correo}
                       onChange={(e) => handleChange("correo", e.target.value)}
                       onBlur={() => handleBlur("correo")}
-                      className={`h-12 pl-10 transition-all ${
-                        errors.correo && touchedFields.correo
+                      className={`h-12 pl-10 transition-all ${errors.correo && touchedFields.correo
                           ? "border-eco-error focus:ring-eco-error"
                           : isFieldValid("correo")
                             ? "border-eco-success focus:ring-eco-success"
                             : "border-eco-gray-light focus:ring-eco-primary"
-                      }`}
+                        }`}
                       placeholder="tucorreo@ejemplo.com"
                     />
                     {isFieldValid("correo") && (
@@ -410,13 +412,12 @@ export default function RegisterPage() {
                       value={formData.contrasena}
                       onChange={(e) => handleChange("contrasena", e.target.value)}
                       onBlur={() => handleBlur("contrasena")}
-                      className={`h-12 pr-10 transition-all ${
-                        errors.contrasena && touchedFields.contrasena
+                      className={`h-12 pr-10 transition-all ${errors.contrasena && touchedFields.contrasena
                           ? "border-eco-error focus:ring-eco-error"
                           : isFieldValid("contrasena")
                             ? "border-eco-success focus:ring-eco-success"
                             : "border-eco-gray-light focus:ring-eco-primary"
-                      }`}
+                        }`}
                       placeholder="Mínimo 8 caracteres"
                     />
                     <button
@@ -458,13 +459,12 @@ export default function RegisterPage() {
                         value={formData.cedula}
                         onChange={(e) => handleChange("cedula", e.target.value.replace(/\D/g, ""))}
                         onBlur={() => handleBlur("cedula")}
-                        className={`h-12 transition-all ${
-                          errors.cedula && touchedFields.cedula
+                        className={`h-12 transition-all ${errors.cedula && touchedFields.cedula
                             ? "border-eco-error focus:ring-eco-error"
                             : isFieldValid("cedula")
                               ? "border-eco-success focus:ring-eco-success"
                               : "border-eco-gray-light focus:ring-eco-primary"
-                        }`}
+                          }`}
                         placeholder="1234567890"
                         maxLength={10}
                       />
@@ -492,13 +492,12 @@ export default function RegisterPage() {
                         value={formData.telefono}
                         onChange={(e) => handleChange("telefono", e.target.value.replace(/\D/g, ""))}
                         onBlur={() => handleBlur("telefono")}
-                        className={`h-12 pl-10 transition-all ${
-                          errors.telefono && touchedFields.telefono
+                        className={`h-12 pl-10 transition-all ${errors.telefono && touchedFields.telefono
                             ? "border-eco-error focus:ring-eco-error"
                             : isFieldValid("telefono")
                               ? "border-eco-success focus:ring-eco-success"
                               : "border-eco-gray-light focus:ring-eco-primary"
-                        }`}
+                          }`}
                         placeholder="0987654321"
                         maxLength={10}
                       />
@@ -535,19 +534,18 @@ export default function RegisterPage() {
                       onOpenChange={() => handleBlur("provincia")}
                     >
                       <SelectTrigger
-                        className={`h-12 ${
-                          errors.provincia && touchedFields.provincia
+                        className={`h-12 ${errors.provincia && touchedFields.provincia
                             ? "border-eco-error"
                             : isFieldValid("provincia")
                               ? "border-eco-success"
                               : "border-eco-gray-light"
-                        }`}
+                          }`}
                       >
                         <SelectValue placeholder="Selecciona tu provincia" />
                       </SelectTrigger>
                       <SelectContent>
                         {provincias.map((prov) => (
-                          <SelectItem key={prov.id} value={prov.id.toString()}>
+                          <SelectItem key={prov.id_provincia} value={prov.id_provincia.toString()}>
                             {prov.nombre}
                           </SelectItem>
                         ))}
@@ -572,19 +570,18 @@ export default function RegisterPage() {
                       onOpenChange={() => handleBlur("id_ciudad")}
                     >
                       <SelectTrigger
-                        className={`h-12 ${
-                          errors.id_ciudad && touchedFields.id_ciudad
+                        className={`h-12 ${errors.id_ciudad && touchedFields.id_ciudad
                             ? "border-eco-error"
                             : isFieldValid("id_ciudad")
                               ? "border-eco-success"
                               : "border-eco-gray-light"
-                        }`}
+                          }`}
                       >
                         <SelectValue placeholder="Selecciona tu ciudad" />
                       </SelectTrigger>
                       <SelectContent>
                         {ciudadesDisponibles.map((city) => (
-                          <SelectItem key={city.id} value={city.id.toString()}>
+                          <SelectItem key={city.id_ciudad} value={city.id_ciudad.toString()}>
                             {city.nombre}
                           </SelectItem>
                         ))}
@@ -609,13 +606,12 @@ export default function RegisterPage() {
                     value={formData.direccion}
                     onChange={(e) => handleChange("direccion", e.target.value)}
                     onBlur={() => handleBlur("direccion")}
-                    className={`h-12 transition-all ${
-                      errors.direccion && touchedFields.direccion
+                    className={`h-12 transition-all ${errors.direccion && touchedFields.direccion
                         ? "border-eco-error focus:ring-eco-error"
                         : isFieldValid("direccion")
                           ? "border-eco-success focus:ring-eco-success"
                           : "border-eco-gray-light focus:ring-eco-primary"
-                    }`}
+                      }`}
                     placeholder="Ej: Av. Principal y Calle Secundaria"
                   />
                   {errors.direccion && touchedFields.direccion && (
