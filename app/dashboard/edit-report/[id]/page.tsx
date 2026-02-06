@@ -10,6 +10,9 @@ import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { AlertCircle, ArrowLeft, MapPin, Loader2, Save } from "lucide-react"
+import dynamic from "next/dynamic"
+
+const LocationPicker = dynamic(() => import("@/components/ui/LocationPicker"), { ssr: false })
 
 interface Categoria {
     id_categoria: number;
@@ -56,9 +59,10 @@ export default function EditReportPage({ params }: { params: Promise<{ id: strin
                 // For now, I'll use `getMyReports` and find it, or add the endpoint.
                 // Adding endpoint is cleaner. I will add `GET /:id` in routes. It uses `Report.findById`.
 
-                const reportRes = await api.get(`/reportes/mis-reportes`);
-                // Workaround: fetch all my reports and find the one.
-                const report = reportRes.data.data.find((r: any) => String(r.id_reporte) === String(reportId));
+                // Adding endpoint is cleaner. I will add `GET /:id` in routes. It uses `Report.findById`.
+
+                const reportRes = await api.get(`/reportes/${reportId}`);
+                const report = reportRes.data.data;
 
                 if (report) {
                     setFormData({
@@ -146,24 +150,31 @@ export default function EditReportPage({ params }: { params: Promise<{ id: strin
                         />
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="latitud">Latitud</Label>
-                            <Input
-                                id="latitud"
-                                value={formData.latitud}
-                                onChange={(e) => setFormData({ ...formData, latitud: e.target.value })}
-                                required
+                    <div className="space-y-2">
+                        <Label>Ubicación</Label>
+                        {/* Only render map if we have coordinates to avoid jumping or create LocationPicker capable of null init */}
+                        {formData.latitud && formData.longitud && (
+                            <LocationPicker
+                                initialLat={parseFloat(formData.latitud)}
+                                initialLng={parseFloat(formData.longitud)}
+                                onLocationSelect={(lat, lng) => {
+                                    setFormData(prev => ({
+                                        ...prev,
+                                        latitud: lat.toString(),
+                                        longitud: lng.toString()
+                                    }))
+                                }}
                             />
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="longitud">Longitud</Label>
-                            <Input
-                                id="longitud"
-                                value={formData.longitud}
-                                onChange={(e) => setFormData({ ...formData, longitud: e.target.value })}
-                                required
-                            />
+                        )}
+                        <div className="grid grid-cols-2 gap-4 mt-2">
+                            <div className="space-y-1">
+                                <Label className="text-xs text-gray-500">Latitud</Label>
+                                <Input value={formData.latitud} readOnly className="bg-gray-50 text-xs h-8" />
+                            </div>
+                            <div className="space-y-1">
+                                <Label className="text-xs text-gray-500">Longitud</Label>
+                                <Input value={formData.longitud} readOnly className="bg-gray-50 text-xs h-8" />
+                            </div>
                         </div>
                     </div>
 

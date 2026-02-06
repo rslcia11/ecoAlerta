@@ -94,14 +94,14 @@ export default function LoginPage() {
     // Llamada al backend real
     try {
       const response = await api.post('/auth/login', {
-        correo: formData.correo,
-        contrasena: formData.contrasena
+        email: formData.correo,
+        password: formData.contrasena
       });
 
-      const { token, usuario } = response.data;
+      const { token, user } = response.data;
 
       // Usar el contexto para guardar sesión
-      login(token, usuario);
+      login(token, user);
 
       // Redirigir al dashboard
       router.push("/dashboard");
@@ -168,10 +168,10 @@ export default function LoginPage() {
                     onChange={(e) => handleChange("correo", e.target.value)}
                     onBlur={() => handleBlur("correo")}
                     className={`h-12 pl-10 transition-all ${errors.correo && touchedFields.correo
-                        ? "border-eco-error focus:ring-eco-error"
-                        : isFieldValid("correo")
-                          ? "border-eco-success focus:ring-eco-success"
-                          : "border-eco-gray-light focus:ring-eco-primary"
+                      ? "border-eco-error focus:ring-eco-error"
+                      : isFieldValid("correo")
+                        ? "border-eco-success focus:ring-eco-success"
+                        : "border-eco-gray-light focus:ring-eco-primary"
                       }`}
                     placeholder="tucorreo@ejemplo.com"
                   />
@@ -209,10 +209,10 @@ export default function LoginPage() {
                     onChange={(e) => handleChange("contrasena", e.target.value)}
                     onBlur={() => handleBlur("contrasena")}
                     className={`h-12 pl-10 pr-10 transition-all ${errors.contrasena && touchedFields.contrasena
-                        ? "border-eco-error focus:ring-eco-error"
-                        : isFieldValid("contrasena")
-                          ? "border-eco-success focus:ring-eco-success"
-                          : "border-eco-gray-light focus:ring-eco-primary"
+                      ? "border-eco-error focus:ring-eco-error"
+                      : isFieldValid("contrasena")
+                        ? "border-eco-success focus:ring-eco-success"
+                        : "border-eco-gray-light focus:ring-eco-primary"
                       }`}
                     placeholder="Ingresa tu contraseña"
                   />

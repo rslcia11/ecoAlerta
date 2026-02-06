@@ -57,7 +57,7 @@ interface Alert {
   comentarios: number
   vistas: number
   vistas: number
-  estado: "activo" | "en_proceso" | "resuelto"
+  estado: "activo" | "en_proceso" | "resuelto" | "rechazado"
   id_usuario?: number
 }
 
@@ -148,6 +148,7 @@ const coloresEstado: Record<string, string> = {
   activo: "bg-eco-error/10 text-eco-error border-eco-error/20",
   en_proceso: "bg-eco-warning/10 text-eco-warning border-eco-warning/20",
   resuelto: "bg-eco-success/10 text-eco-success border-eco-success/20",
+  rechazado: "bg-gray-100 text-gray-500 border-gray-200",
 }
 
 export default function DashboardPage() {
@@ -178,7 +179,10 @@ export default function DashboardPage() {
           likes: 0,
           comentarios: 0,
           vistas: 0,
-          estado: r.estado === 'por aprobar' ? 'en_proceso' : r.estado, // Map backend status
+          estado: (r.estado === 'Aprobado') ? 'activo' as any
+            : (r.estado === 'Pendiente' || r.estado === 'por aprobar') ? 'en_proceso' as any
+              : (r.estado === 'Rechazado') ? 'rechazado' as any
+                : 'resuelto' as any, // Fallback for others
           id_usuario: r.id_usr
         }));
         setAlertas(mappedAlerts);
@@ -303,6 +307,17 @@ export default function DashboardPage() {
                       Configuración
                     </Link>
                   </DropdownMenuItem>
+                  {user?.rol === 'admin' && (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem asChild>
+                        <Link href="/dashboard/admin" className="cursor-pointer text-blue-600 font-medium">
+                          <Award className="w-4 h-4 mr-2" />
+                          Panel Admin
+                        </Link>
+                      </DropdownMenuItem>
+                    </>
+                  )}
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleLogout} className="text-eco-error cursor-pointer">
                     <LogOut className="w-4 h-4 mr-2" />
@@ -336,6 +351,18 @@ export default function DashboardPage() {
 
               {/* Navegación */}
               <div className="space-y-1 mt-2">
+                {user?.rol === 'admin' && (
+                  <Link
+                    href="/dashboard/admin"
+                    className="flex items-center gap-3 p-2 rounded-lg hover:bg-blue-50 transition-colors w-full text-left border border-blue-100 bg-blue-50 mb-2"
+                  >
+                    <div className="w-9 h-9 bg-blue-600 rounded-full flex items-center justify-center shadow-sm">
+                      <Award className="w-5 h-5 text-white" />
+                    </div>
+                    <span className="font-bold text-blue-800">Panel Admin</span>
+                  </Link>
+                )}
+
                 <Link
                   href="/dashboard/my-reports"
                   className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-100 transition-colors w-full text-left"

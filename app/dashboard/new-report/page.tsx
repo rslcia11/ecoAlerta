@@ -10,6 +10,9 @@ import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { AlertCircle, ArrowLeft, Upload, MapPin, Loader2 } from "lucide-react"
+import dynamic from "next/dynamic"
+
+const LocationPicker = dynamic(() => import("@/components/ui/LocationPicker"), { ssr: false })
 
 interface Categoria {
     id_categoria: number;
@@ -28,6 +31,11 @@ export default function NewReportPage() {
         latitud: "",
         longitud: "",
     })
+
+    // Construct default search query from user profile
+    const userLocationQuery = user?.ciudad && user?.provincia
+        ? `${user.ciudad}, ${user.provincia}, Ecuador`
+        : "Loja, Ecuador";
 
     const [files, setFiles] = useState<FileList | null>(null)
     const [previewUrl, setPreviewUrl] = useState<string | null>(null)
@@ -141,32 +149,35 @@ export default function NewReportPage() {
                         />
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="latitud">Latitud</Label>
-                            <Input
-                                id="latitud"
-                                value={formData.latitud}
-                                onChange={(e) => setFormData({ ...formData, latitud: e.target.value })}
-                                placeholder="-4.000"
-                                required
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="longitud">Longitud</Label>
-                            <Input
-                                id="longitud"
-                                value={formData.longitud}
-                                onChange={(e) => setFormData({ ...formData, longitud: e.target.value })}
-                                placeholder="-79.200"
-                                required
-                            />
+                    {/* Logic moved here for clarity in this correction, but actually it should be in component body. 
+                        Wait, I can't move it to component body easily with this chunk if I don't target the body. 
+                        I will just clean the JSX here and use a separate chunk for the component body logic. 
+                    */}
+
+                    <div className="space-y-2">
+                        <Label>Ubicación del incidente</Label>
+                        <LocationPicker
+                            onLocationSelect={(lat, lng) => {
+                                setFormData(prev => ({
+                                    ...prev,
+                                    latitud: lat.toString(),
+                                    longitud: lng.toString()
+                                }))
+                            }}
+                            defaultSearchQuery={userLocationQuery}
+                        />
+                        {/* Hidden inputs to ensure form submission still works same way if needed, or just rely on state */}
+                        <div className="grid grid-cols-2 gap-4 mt-2">
+                            <div className="space-y-1">
+                                <Label className="text-xs text-gray-500">Latitud</Label>
+                                <Input value={formData.latitud} readOnly className="bg-gray-50 text-xs h-8" />
+                            </div>
+                            <div className="space-y-1">
+                                <Label className="text-xs text-gray-500">Longitud</Label>
+                                <Input value={formData.longitud} readOnly className="bg-gray-50 text-xs h-8" />
+                            </div>
                         </div>
                     </div>
-                    <p className="text-xs text-gray-500 flex items-center gap-1">
-                        <MapPin className="w-3 h-3" />
-                        Ubicación detectada automáticamente (puedes editarla)
-                    </p>
 
                     <div className="space-y-2">
                         <Label>Evidencia fotográfica</Label>

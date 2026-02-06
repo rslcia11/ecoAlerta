@@ -11,7 +11,10 @@ interface User {
     correo: string;
     rol: string;
     avatar?: string;
-    nivel?: string; // Para compatibilidad con el frontend actual
+    nivel?: string;
+    id_ciudad?: number;
+    ciudad?: string;
+    provincia?: string;
 }
 
 interface AuthContextType {

@@ -198,8 +198,8 @@ export default function RegisterPage() {
       const response = await api.post('/auth/register', {
         nombre: formData.nombre,
         apellido: formData.apellido,
-        correo: formData.correo,
-        contrasena: formData.contrasena,
+        email: formData.correo,
+        password: formData.contrasena,
         cedula: formData.cedula,
         telefono: formData.telefono,
         id_ciudad: Number(formData.id_ciudad)
@@ -310,10 +310,10 @@ export default function RegisterPage() {
                         onChange={(e) => handleChange("nombre", e.target.value)}
                         onBlur={() => handleBlur("nombre")}
                         className={`h-12 transition-all ${errors.nombre && touchedFields.nombre
-                            ? "border-eco-error focus:ring-eco-error"
-                            : isFieldValid("nombre")
-                              ? "border-eco-success focus:ring-eco-success"
-                              : "border-eco-gray-light focus:ring-eco-primary"
+                          ? "border-eco-error focus:ring-eco-error"
+                          : isFieldValid("nombre")
+                            ? "border-eco-success focus:ring-eco-success"
+                            : "border-eco-gray-light focus:ring-eco-primary"
                           }`}
                         placeholder="Ej: Juan"
                       />
@@ -341,10 +341,10 @@ export default function RegisterPage() {
                         onChange={(e) => handleChange("apellido", e.target.value)}
                         onBlur={() => handleBlur("apellido")}
                         className={`h-12 transition-all ${errors.apellido && touchedFields.apellido
-                            ? "border-eco-error focus:ring-eco-error"
-                            : isFieldValid("apellido")
-                              ? "border-eco-success focus:ring-eco-success"
-                              : "border-eco-gray-light focus:ring-eco-primary"
+                          ? "border-eco-error focus:ring-eco-error"
+                          : isFieldValid("apellido")
+                            ? "border-eco-success focus:ring-eco-success"
+                            : "border-eco-gray-light focus:ring-eco-primary"
                           }`}
                         placeholder="Ej: Pérez"
                       />
@@ -382,10 +382,10 @@ export default function RegisterPage() {
                       onChange={(e) => handleChange("correo", e.target.value)}
                       onBlur={() => handleBlur("correo")}
                       className={`h-12 pl-10 transition-all ${errors.correo && touchedFields.correo
-                          ? "border-eco-error focus:ring-eco-error"
-                          : isFieldValid("correo")
-                            ? "border-eco-success focus:ring-eco-success"
-                            : "border-eco-gray-light focus:ring-eco-primary"
+                        ? "border-eco-error focus:ring-eco-error"
+                        : isFieldValid("correo")
+                          ? "border-eco-success focus:ring-eco-success"
+                          : "border-eco-gray-light focus:ring-eco-primary"
                         }`}
                       placeholder="tucorreo@ejemplo.com"
                     />
@@ -413,10 +413,10 @@ export default function RegisterPage() {
                       onChange={(e) => handleChange("contrasena", e.target.value)}
                       onBlur={() => handleBlur("contrasena")}
                       className={`h-12 pr-10 transition-all ${errors.contrasena && touchedFields.contrasena
-                          ? "border-eco-error focus:ring-eco-error"
-                          : isFieldValid("contrasena")
-                            ? "border-eco-success focus:ring-eco-success"
-                            : "border-eco-gray-light focus:ring-eco-primary"
+                        ? "border-eco-error focus:ring-eco-error"
+                        : isFieldValid("contrasena")
+                          ? "border-eco-success focus:ring-eco-success"
+                          : "border-eco-gray-light focus:ring-eco-primary"
                         }`}
                       placeholder="Mínimo 8 caracteres"
                     />
@@ -460,10 +460,10 @@ export default function RegisterPage() {
                         onChange={(e) => handleChange("cedula", e.target.value.replace(/\D/g, ""))}
                         onBlur={() => handleBlur("cedula")}
                         className={`h-12 transition-all ${errors.cedula && touchedFields.cedula
-                            ? "border-eco-error focus:ring-eco-error"
-                            : isFieldValid("cedula")
-                              ? "border-eco-success focus:ring-eco-success"
-                              : "border-eco-gray-light focus:ring-eco-primary"
+                          ? "border-eco-error focus:ring-eco-error"
+                          : isFieldValid("cedula")
+                            ? "border-eco-success focus:ring-eco-success"
+                            : "border-eco-gray-light focus:ring-eco-primary"
                           }`}
                         placeholder="1234567890"
                         maxLength={10}
@@ -493,10 +493,10 @@ export default function RegisterPage() {
                         onChange={(e) => handleChange("telefono", e.target.value.replace(/\D/g, ""))}
                         onBlur={() => handleBlur("telefono")}
                         className={`h-12 pl-10 transition-all ${errors.telefono && touchedFields.telefono
-                            ? "border-eco-error focus:ring-eco-error"
-                            : isFieldValid("telefono")
-                              ? "border-eco-success focus:ring-eco-success"
-                              : "border-eco-gray-light focus:ring-eco-primary"
+                          ? "border-eco-error focus:ring-eco-error"
+                          : isFieldValid("telefono")
+                            ? "border-eco-success focus:ring-eco-success"
+                            : "border-eco-gray-light focus:ring-eco-primary"
                           }`}
                         placeholder="0987654321"
                         maxLength={10}
@@ -535,10 +535,10 @@ export default function RegisterPage() {
                     >
                       <SelectTrigger
                         className={`h-12 ${errors.provincia && touchedFields.provincia
-                            ? "border-eco-error"
-                            : isFieldValid("provincia")
-                              ? "border-eco-success"
-                              : "border-eco-gray-light"
+                          ? "border-eco-error"
+                          : isFieldValid("provincia")
+                            ? "border-eco-success"
+                            : "border-eco-gray-light"
                           }`}
                       >
                         <SelectValue placeholder="Selecciona tu provincia" />
@@ -571,10 +571,10 @@ export default function RegisterPage() {
                     >
                       <SelectTrigger
                         className={`h-12 ${errors.id_ciudad && touchedFields.id_ciudad
-                            ? "border-eco-error"
-                            : isFieldValid("id_ciudad")
-                              ? "border-eco-success"
-                              : "border-eco-gray-light"
+                          ? "border-eco-error"
+                          : isFieldValid("id_ciudad")
+                            ? "border-eco-success"
+                            : "border-eco-gray-light"
                           }`}
                       >
                         <SelectValue placeholder="Selecciona tu ciudad" />
@@ -607,10 +607,10 @@ export default function RegisterPage() {
                     onChange={(e) => handleChange("direccion", e.target.value)}
                     onBlur={() => handleBlur("direccion")}
                     className={`h-12 transition-all ${errors.direccion && touchedFields.direccion
-                        ? "border-eco-error focus:ring-eco-error"
-                        : isFieldValid("direccion")
-                          ? "border-eco-success focus:ring-eco-success"
-                          : "border-eco-gray-light focus:ring-eco-primary"
+                      ? "border-eco-error focus:ring-eco-error"
+                      : isFieldValid("direccion")
+                        ? "border-eco-success focus:ring-eco-success"
+                        : "border-eco-gray-light focus:ring-eco-primary"
                       }`}
                     placeholder="Ej: Av. Principal y Calle Secundaria"
                   />
