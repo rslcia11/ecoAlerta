@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, useRef } from "react"
 import dynamic from "next/dynamic"
-import { Search, Loader2 } from "lucide-react"
+import { Search, Loader2, MapPin } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 
@@ -37,7 +37,7 @@ interface LocationPickerProps {
     initialLat?: number
     initialLng?: number
     defaultSearchQuery?: string // e.g. "Loja, Ecuador"
-    onLocationSelect: (lat: number, lng: number) => void
+    onLocationSelect: (lat: number, lng: number, address?: string) => void
 }
 
 const LocationPickerClient = ({
@@ -59,14 +59,18 @@ const LocationPickerClient = ({
     )
     const [searchQuery, setSearchQuery] = useState("")
     const [searching, setSearching] = useState(false)
+    const [address, setAddress] = useState("")
     const mapRef = useRef<LeafletMap | null>(null)
 
     // Map events to handle click/drag
     const MapEvents = () => {
         useMapEvents({
-            click(e: any) {
-                setPosition([e.latlng.lat, e.latlng.lng])
-                onLocationSelect(e.latlng.lat, e.latlng.lng)
+            async click(e: any) {
+                const lat = e.latlng.lat;
+                const lng = e.latlng.lng;
+                setPosition([lat, lng])
+                const addr = await reverseGeocode(lat, lng)
+                onLocationSelect(lat, lng, addr)
             },
         })
         return null
@@ -101,13 +105,30 @@ const LocationPickerClient = ({
             if (data && data.length > 0) {
                 const lat = parseFloat(data[0].lat)
                 const lon = parseFloat(data[0].lon)
+                const addr = data[0].display_name
                 setPosition([lat, lon])
-                onLocationSelect(lat, lon)
+                setAddress(addr)
+                onLocationSelect(lat, lon, addr)
             }
         } catch (error) {
             console.error("Error geocoding:", error)
         } finally {
             setSearching(false)
+        }
+    }
+
+    const reverseGeocode = async (lat: number, lng: number): Promise<string> => {
+        try {
+            const response = await fetch(
+                `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`
+            )
+            const data = await response.json()
+            const addr = data.display_name || `Lat: ${lat.toFixed(4)}, Lng: ${lng.toFixed(4)}`
+            setAddress(addr)
+            return addr
+        } catch (error) {
+            console.error("Error reverse geocoding:", error)
+            return `Lat: ${lat.toFixed(4)}, Lng: ${lng.toFixed(4)}`
         }
     }
 
@@ -120,12 +141,13 @@ const LocationPickerClient = ({
         const markerRef = useRef<any>(null)
         const eventHandlers = useMemo(
             () => ({
-                dragend() {
+                async dragend() {
                     const marker = markerRef.current
                     if (marker != null) {
                         const { lat, lng } = marker.getLatLng()
                         setPosition([lat, lng])
-                        onLocationSelect(lat, lng)
+                        const addr = await reverseGeocode(lat, lng)
+                        onLocationSelect(lat, lng, addr)
                     }
                 },
             }),
@@ -163,6 +185,15 @@ const LocationPickerClient = ({
                     {searching ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
                 </Button>
             </div>
+
+            {address && (
+                <div className="bg-eco-primary/5 border border-eco-primary/10 rounded-lg p-2 flex items-start gap-2">
+                    <MapPin className="w-4 h-4 text-eco-primary shrink-0 mt-0.5" />
+                    <span className="text-xs text-eco-primary-dark font-medium line-clamp-2">
+                        {address}
+                    </span>
+                </div>
+            )}
 
             <div className="h-[300px] w-full rounded-lg overflow-hidden border border-gray-200 z-0 relative">
                 <MapContainer

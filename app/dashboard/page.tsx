@@ -42,6 +42,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { CommentsModal } from "@/components/dashboard/CommentsModal"
+import { formatRelativeTime } from "@/lib/utils"
 
 // Tipos para las alertas
 interface Alert {
@@ -56,9 +58,10 @@ interface Alert {
   likes: number
   comentarios: number
   vistas: number
-  vistas: number
   estado: "activo" | "en_proceso" | "resuelto" | "rechazado"
   id_usuario?: number
+  liked_by_me?: boolean
+  ubicacion_nombre?: string
 }
 
 // Datos de ejemplo de alertas
@@ -122,13 +125,13 @@ const alertasEjemplo: Alert[] = [
 ]
 
 const CATEGORY_MAP: Record<number, string> = {
-  1: "basura",
-  2: "deforestacion",
-  3: "contaminacion",
-  4: "ruido",
-  5: "fauna",
-  6: "aire",
-  7: "infraestructura"
+  1: "basura",           // Vertido de basura ilegal
+  2: "deforestacion",    // Tala de árboles
+  3: "contaminacion",    // Contaminación de río o quebrada
+  4: "ruido",            // Ruido excesivo
+  5: "fauna",            // Fauna urbana herida
+  6: "aire",             // Contaminación del aire
+  7: "infraestructura"   // Infraestructura en mal estado
 };
 
 // Iconos por categoría (Map keys to IDs for easier lookup or mapped strings)
@@ -161,6 +164,13 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
   const [filtroCategoria, setFiltroCategoria] = useState<string>("todas")
   const [busqueda, setBusqueda] = useState("")
+  const [userStats, setUserStats] = useState({ totalReportes: 0, activos: 0 })
+  const [activeTab, setActiveTab] = useState<"feed" | "tendencias" | "estadisticas">("feed")
+  const [selectedReportId, setSelectedReportId] = useState<number | null>(null)
+  const [trendingReports, setTrendingReports] = useState<any[]>([])
+  const [notifications, setNotifications] = useState<any[]>([])
+  const [unreadCount, setUnreadCount] = useState(0)
+  const [reportesHoy, setReportesHoy] = useState(0)
 
   useEffect(() => {
     const fetchReports = async () => {
@@ -172,13 +182,14 @@ export default function DashboardPage() {
           titulo: r.descripcion ? r.descripcion.substring(0, 50) + "..." : "Reporte sin título",
           descripcion: r.descripcion,
           categoria: CATEGORY_MAP[r.id_categoria] || "general",
-          ubicacion: `Lat: ${r.latitud}, Lng: ${r.longitud}`,
-          fecha: new Date(r.creado_en).toLocaleDateString(),
+          ubicacion: r.ubicacion || `Lat: ${r.latitud}, Lng: ${r.longitud}`,
+          fecha: formatRelativeTime(r.creado_en),
           autor: `${r.autor_nombre || 'Anónimo'} ${r.autor_apellido || ''}`,
           imagen: r.imagen ? `${(process.env.NEXT_PUBLIC_API_URL || '').replace('/api', '')}${r.imagen}` : undefined,
-          likes: 0,
-          comentarios: 0,
-          vistas: 0,
+          likes: r.likes || 0,
+          comentarios: r.comentarios || 0,
+          vistas: r.vistas || 0,
+          liked_by_me: !!r.liked_by_me,
           estado: (r.estado === 'Aprobado') ? 'activo' as any
             : (r.estado === 'Pendiente' || r.estado === 'por aprobar') ? 'en_proceso' as any
               : (r.estado === 'Rechazado') ? 'rechazado' as any
@@ -192,8 +203,70 @@ export default function DashboardPage() {
         setLoading(false);
       }
     };
+
+    const fetchUserStats = async () => {
+      try {
+        const res = await api.get('/reportes/mis-stats');
+        if (res.data.success) {
+          setUserStats(res.data.data);
+        }
+      } catch (error) {
+        console.error("Error fetching user stats:", error);
+      }
+    };
+
+    const fetchTodayCount = async () => {
+      try {
+        const res = await api.get('/reportes/hoy');
+        if (res.data.success) {
+          setReportesHoy(res.data.data.reportesHoy);
+        }
+      } catch (error) {
+        console.error("Error fetching today count:", error);
+      }
+    };
+
     fetchReports();
-  }, []);
+    if (user) fetchUserStats();
+    fetchTodayCount();
+  }, [user]);
+
+  // Fetch trending when tab changes
+  useEffect(() => {
+    const fetchTrending = async () => {
+      try {
+        const res = await api.get('/trending?limit=10');
+        if (res.data.success) {
+          setTrendingReports(res.data.data);
+        }
+      } catch (error) {
+        console.error("Error fetching trending:", error);
+      }
+    };
+
+    if (activeTab === "tendencias") {
+      fetchTrending();
+    }
+  }, [activeTab]);
+
+  // Fetch notifications when tab changes
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      try {
+        const res = await api.get('/notificaciones');
+        if (res.data.success) {
+          setNotifications(res.data.data.notifications);
+          setUnreadCount(res.data.data.unreadCount);
+        }
+      } catch (error) {
+        console.error("Error fetching notifications:", error);
+      }
+    };
+
+    if (activeTab === "estadisticas" && user) {
+      fetchNotifications();
+    }
+  }, [activeTab, user]);
 
   const handleLogout = () => {
     logout()
@@ -207,6 +280,41 @@ export default function DashboardPage() {
     } catch (error) {
       console.error("Error al eliminar", error);
       alert("No se pudo eliminar el reporte");
+    }
+  }
+
+  const handleLike = async (reportId: number) => {
+    if (!user) {
+      alert("Debes iniciar sesión para dar me gusta");
+      return;
+    }
+    try {
+      const res = await api.post(`/reportes/${reportId}/like`);
+      if (res.data.success) {
+        const { liked, likes } = res.data.data;
+        // Update alertas with new like count and status
+        setAlertas(prev => prev.map(a =>
+          a.id === reportId ? { ...a, likes, liked_by_me: liked } : a
+        ));
+        // Update trendingReports too
+        setTrendingReports(prev => prev.map(r =>
+          r.id_reporte === reportId ? { ...r, likes, liked_by_me: liked } : r
+        ));
+      }
+    } catch (error) {
+      console.error("Error toggling like:", error);
+    }
+  }
+
+  const handleMarkRead = async (notificationId: number) => {
+    try {
+      await api.put(`/notificaciones/${notificationId}/read`);
+      setNotifications(prev => prev.map(n =>
+        n.id_notificacion === notificationId ? { ...n, leido: 1 } : n
+      ));
+      setUnreadCount(prev => Math.max(0, prev - 1));
+    } catch (error) {
+      console.error("Error marking read:", error);
     }
   }
 
@@ -363,6 +471,16 @@ export default function DashboardPage() {
                   </Link>
                 )}
 
+                <button
+                  onClick={() => setActiveTab("feed")}
+                  className={`flex items-center gap-3 p-2 rounded-lg hover:bg-gray-100 transition-colors w-full text-left ${activeTab === "feed" ? "bg-green-50" : ""}`}
+                >
+                  <div className="w-9 h-9 bg-eco-primary/10 rounded-full flex items-center justify-center">
+                    <Home className="w-5 h-5 text-eco-primary" />
+                  </div>
+                  <span className="font-medium text-gray-700">Inicio</span>
+                </button>
+
                 <Link
                   href="/dashboard/my-reports"
                   className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-100 transition-colors w-full text-left"
@@ -373,21 +491,20 @@ export default function DashboardPage() {
                   <span className="font-medium text-gray-700">Mis reportes</span>
                 </Link>
 
-                <button className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-100 transition-colors w-full text-left">
+                <button
+                  onClick={() => setActiveTab("tendencias")}
+                  className={`flex items-center gap-3 p-2 rounded-lg hover:bg-gray-100 transition-colors w-full text-left ${activeTab === "tendencias" ? "bg-blue-50" : ""}`}
+                >
                   <div className="w-9 h-9 bg-blue-100 rounded-full flex items-center justify-center">
                     <TrendingUp className="w-5 h-5 text-blue-600" />
                   </div>
                   <span className="font-medium text-gray-700">Tendencias</span>
                 </button>
 
-                <button className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-100 transition-colors w-full text-left">
-                  <div className="w-9 h-9 bg-purple-100 rounded-full flex items-center justify-center">
-                    <Award className="w-5 h-5 text-purple-600" />
-                  </div>
-                  <span className="font-medium text-gray-700">Logros</span>
-                </button>
-
-                <button className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-100 transition-colors w-full text-left">
+                <button
+                  onClick={() => setActiveTab("estadisticas")}
+                  className={`flex items-center gap-3 p-2 rounded-lg hover:bg-gray-100 transition-colors w-full text-left ${activeTab === "estadisticas" ? "bg-orange-50" : ""}`}
+                >
                   <div className="w-9 h-9 bg-orange-100 rounded-full flex items-center justify-center">
                     <BarChart3 className="w-5 h-5 text-orange-600" />
                   </div>
@@ -399,163 +516,310 @@ export default function DashboardPage() {
 
           {/* Feed central */}
           <main className="col-span-12 lg:col-span-6 space-y-4">
-            <div className="bg-white rounded-lg shadow p-4">
-              <div className="flex items-center gap-3 mb-3">
-                <Avatar className="w-10 h-10">
-                  <AvatarImage src={user?.avatar || "/placeholder.svg"} />
-                  <AvatarFallback className="bg-eco-primary text-white">
-                    {user?.nombre ? user.nombre[0] : "U"}
-                  </AvatarFallback>
-                </Avatar>
-                <Button
-                  asChild
-                  variant="outline"
-                  className="flex-1 justify-start text-gray-500 hover:bg-gray-100 rounded-full h-10 bg-[#f0f2f5] border-none"
-                >
-                  <Link href="/dashboard/new-report">¿Qué problema ambiental quieres reportar?</Link>
-                </Button>
-              </div>
-              <div className="border-t pt-3 flex items-center justify-around">
-                <Button variant="ghost" className="flex-1 text-gray-600 hover:bg-gray-100">
-                  <AlertCircle className="w-5 h-5 mr-2 text-eco-error" />
-                  Reportar
-                </Button>
-              </div>
-            </div>
+            {/* Tendencias Tab */}
+            {/* Tendencias Tab */}
+            {activeTab === "tendencias" && (
+              <div className="bg-white rounded-lg shadow p-6">
+                <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+                  <TrendingUp className="w-6 h-6 text-blue-600" />
+                  Tendencias
+                </h2>
+                {trendingReports.length === 0 ? (
+                  <div className="text-center py-12 bg-gray-50 rounded-lg border border-dashed border-gray-200">
+                    <TrendingUp className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                    <p className="text-gray-500">No hay reportes virales aún</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {trendingReports.map((report, index) => (
+                      <div key={report.id_reporte} className="border rounded-xl p-4 hover:shadow-md transition-shadow bg-white">
+                        <div className="flex items-start gap-4">
+                          <div className="text-3xl font-bold text-gray-200 select-none">#{index + 1}</div>
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-semibold text-gray-900 truncate pr-4">{report.descripcion}</h3>
+                            <div className="flex items-center gap-2 text-sm text-gray-500 mt-1">
+                              <span>Por {report.autor_nombre} {report.autor_apellido}</span>
+                              <span>•</span>
+                              <span>{formatRelativeTime(report.creado_en)}</span>
+                            </div>
+                            {report.ubicacion && (
+                              <div className="flex items-center gap-1 text-xs text-eco-primary mt-1">
+                                <MapPin className="w-3 h-3" />
+                                <span className="truncate">{report.ubicacion}</span>
+                              </div>
+                            )}
 
-            {/* Filtros */}
-            <div className="bg-white rounded-lg shadow p-4">
-              <div className="flex items-center gap-2">
-                <Select value={filtroCategoria} onValueChange={setFiltroCategoria}>
-                  <SelectTrigger className="flex-1">
-                    <SelectValue placeholder="Filtrar por categoría" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="todas">Todas las categorías</SelectItem>
-                    <SelectItem value="fauna">Fauna</SelectItem>
-                    <SelectItem value="basura">Basura</SelectItem>
-                    <SelectItem value="quema">Quema</SelectItem>
-                    <SelectItem value="deforestacion">Deforestación</SelectItem>
-                    <SelectItem value="contaminacion">Contaminación</SelectItem>
-                  </SelectContent>
-                </Select>
+                            <div className="flex items-center gap-6 mt-3">
+                              <button
+                                onClick={() => handleLike(report.id_reporte)}
+                                className={`flex items-center gap-1.5 text-sm transition-colors ${report.liked_by_me ? 'text-red-500 font-medium' : 'text-gray-600 hover:text-red-500'}`}
+                              >
+                                <ThumbsUp className={`w-4 h-4 ${report.liked_by_me ? 'fill-red-500' : ''}`} />
+                                <span>{report.likes}</span>
+                              </button>
+                              <button
+                                onClick={() => setSelectedReportId(report.id_reporte)}
+                                className="flex items-center gap-1.5 text-sm text-gray-600 hover:text-blue-500 transition-colors"
+                              >
+                                <MessageSquare className="w-4 h-4" />
+                                <span>{report.comentarios}</span>
+                              </button>
+                              <div className="flex items-center gap-1.5 text-sm text-gray-400">
+                                <BarChart3 className="w-4 h-4" />
+                                <span>{report.vistas}</span>
+                              </div>
+                            </div>
+                          </div>
+                          {report.imagen && (
+                            <img
+                              src={`${(process.env.NEXT_PUBLIC_API_URL || '').replace('/api', '')}${report.imagen}`}
+                              alt=""
+                              className="w-24 h-24 object-cover rounded-lg bg-gray-100"
+                            />
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
-            </div>
+            )}
 
-            {/* Lista de reportes estilo posts de Facebook */}
-            {loading ? (
-              <div className="flex justify-center p-12"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-eco-primary"></div></div>
-            ) : alertasFiltradas.length === 0 ? (
-              <div className="bg-white rounded-lg shadow p-12 text-center">
-                <AlertCircle className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                <h3 className="text-xl font-semibold text-gray-700 mb-2">No hay reportes</h3>
-                <p className="text-gray-500">Intenta ajustar los filtros o crea un nuevo reporte</p>
-              </div>
-            ) : (
-              alertasFiltradas.map((alerta) => {
-                const IconoCategoria = iconosCategoria[alerta.categoria] || AlertCircle
-                return (
-                  <div key={alerta.id} className="bg-white rounded-lg shadow hover:shadow-lg transition-shadow">
-                    {/* Header del post */}
-                    <div className="p-4 flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <Avatar className="w-10 h-10">
-                          <AvatarFallback className="bg-eco-secondary text-white">
-                            {alerta.autor
-                              .split(" ")
-                              .map((n) => n[0])
-                              .join("")}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <p className="font-semibold text-gray-900">{alerta.autor}</p>
-                          <div className="flex items-center gap-2 text-xs text-gray-500">
-                            <span>{alerta.fecha}</span>
-                            <span>•</span>
-                            <MapPin className="w-3 h-3" />
-                            <span>{alerta.ubicacion}</span>
+            {/* Estadísticas Tab (Notificaciones del autor) */}
+            {activeTab === "estadisticas" && (
+              <div className="bg-white rounded-lg shadow p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                    <Bell className="w-6 h-6 text-orange-600" />
+                    Notificaciones
+                    {unreadCount > 0 && (
+                      <Badge className="bg-red-500 hover:bg-red-600 text-white ml-2 rounded-full px-2 py-0.5 text-xs">
+                        {unreadCount} nuevas
+                      </Badge>
+                    )}
+                  </h2>
+                </div>
+
+                {!user ? (
+                  <div className="text-center py-12 bg-gray-50 rounded-lg border border-dashed border-gray-200">
+                    <User className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                    <p className="text-gray-500">Inicia sesión para ver tu actividad</p>
+                  </div>
+                ) : notifications.length === 0 ? (
+                  <div className="text-center py-12 bg-gray-50 rounded-lg border border-dashed border-gray-200">
+                    <Bell className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                    <p className="text-gray-500">No tienes notificaciones aún</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {notifications.map((notif) => (
+                      <div
+                        key={notif.id_notificacion}
+                        className={`group relative border rounded-xl p-4 transition-all duration-200 ${notif.leido ? 'bg-white hover:border-gray-300' : 'bg-blue-50/50 border-blue-200 shadow-sm'}`}
+                        onClick={() => !notif.leido && handleMarkRead(notif.id_notificacion)}
+                      >
+                        <div className="flex items-start gap-4">
+                          <div className={`mt-1 w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${notif.tipo === 'like' ? 'bg-red-100 text-red-600' : 'bg-blue-100 text-blue-600'}`}>
+                            {notif.tipo === 'like' ? <ThumbsUp className="w-5 h-5" /> : <MessageSquare className="w-5 h-5" />}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between gap-2">
+                              <p className="text-sm font-medium text-gray-900">
+                                <span className="font-bold text-gray-900">{notif.origen_nombre} {notif.origen_apellido}</span>
+                                <span className="text-gray-600 font-normal">
+                                  {notif.tipo === 'like' ? ' le gustó tu reporte' : ' comentó en tu reporte'}
+                                </span>
+                              </p>
+                              <span className="text-xs text-gray-400 whitespace-nowrap">
+                                {formatRelativeTime(notif.creado_en)}
+                              </span>
+                            </div>
+                            <p className="text-sm text-gray-500 mt-1 line-clamp-1 italic">"{notif.reporte_descripcion}"</p>
+
+                            {!notif.leido && (
+                              <span className="inline-block mt-2 text-xs font-medium text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full">
+                                Nueva
+                              </span>
+                            )}
                           </div>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Badge className={`${coloresEstado[alerta.estado]} capitalize`}>
-                          {alerta.estado.replace("_", " ")}
-                        </Badge>
-
-                        {/* Dropdown for Edit/Delete if owner */}
-                        {user && Number(user.id_usr) === Number(alerta.id_usuario) && (
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                                <MoreVertical className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => router.push(`/dashboard/edit-report/${alerta.id}`)}>
-                                <Edit className="mr-2 h-4 w-4" />
-                                Editar
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => deleteReport(alerta.id)} className="text-red-600">
-                                <Trash2 className="mr-2 h-4 w-4" />
-                                Eliminar
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Contenido del post */}
-                    <div className="px-4 pb-3">
-                      <div className="flex items-center gap-2 mb-2">
-                        <div className="w-6 h-6 bg-eco-primary/10 rounded-full flex items-center justify-center">
-                          <IconoCategoria className="w-4 h-4 text-eco-primary" />
-                        </div>
-                        <Badge variant="outline" className="capitalize text-xs">
-                          {alerta.categoria}
-                        </Badge>
-                      </div>
-                      <h3 className="text-lg font-semibold text-gray-900 mb-2">{alerta.titulo}</h3>
-                      <p className="text-gray-700">{alerta.descripcion}</p>
-                    </div>
-
-                    {/* Imagen */}
-                    {alerta.imagen && (
-                      <div className="relative">
-                        <img
-                          src={alerta.imagen || "/placeholder.svg"}
-                          alt={alerta.titulo}
-                          className="w-full h-96 object-cover"
-                        />
-                      </div>
-                    )}
-
-                    {/* Estadísticas */}
-                    <div className="px-4 py-2 flex items-center justify-between text-sm text-gray-500 border-b">
-                      <div className="flex items-center gap-1">
-                        <ThumbsUp className="w-4 h-4 fill-eco-primary text-eco-primary" />
-                        <span>{alerta.likes}</span>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <span>{alerta.comentarios} comentarios</span>
-                        <span>{alerta.vistas} vistas</span>
-                      </div>
-                    </div>
-
-                    {/* Acciones */}
-                    <div className="px-4 py-2 flex items-center justify-around">
-                      <Button variant="ghost" className="flex-1 text-gray-600 hover:bg-gray-100">
-                        <ThumbsUp className="w-5 h-5 mr-2" />
-                        Me gusta
-                      </Button>
-                      <Button variant="ghost" className="flex-1 text-gray-600 hover:bg-gray-100">
-                        <MessageSquare className="w-5 h-5 mr-2" />
-                        Comentar
-                      </Button>
-                    </div>
+                    ))}
                   </div>
-                )
-              })
+                )}
+              </div>
+            )}
+
+            {/* Feed Tab (default) */}
+            {activeTab === "feed" && (
+              <>
+                <div className="bg-white rounded-lg shadow p-4">
+                  <div className="flex items-center gap-3 mb-3">
+                    <Avatar className="w-10 h-10">
+                      <AvatarImage src={user?.avatar || "/placeholder.svg"} />
+                      <AvatarFallback className="bg-eco-primary text-white">
+                        {user?.nombre ? user.nombre[0] : "U"}
+                      </AvatarFallback>
+                    </Avatar>
+                    <Button
+                      asChild
+                      variant="outline"
+                      className="flex-1 justify-start text-gray-500 hover:bg-gray-100 rounded-full h-10 bg-[#f0f2f5] border-none"
+                    >
+                      <Link href="/dashboard/new-report">¿Qué problema ambiental quieres reportar?</Link>
+                    </Button>
+                  </div>
+                  <div className="border-t pt-3 flex items-center justify-around">
+                    <Button variant="ghost" className="flex-1 text-gray-600 hover:bg-gray-100">
+                      <AlertCircle className="w-5 h-5 mr-2 text-eco-error" />
+                      Reportar
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Filtros */}
+                <div className="bg-white rounded-lg shadow p-4">
+                  <div className="flex items-center gap-2">
+                    <Select value={filtroCategoria} onValueChange={setFiltroCategoria}>
+                      <SelectTrigger className="flex-1">
+                        <SelectValue placeholder="Filtrar por categoría" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="todas">Todas las categorías</SelectItem>
+                        <SelectItem value="fauna">Fauna</SelectItem>
+                        <SelectItem value="basura">Basura</SelectItem>
+                        <SelectItem value="quema">Quema</SelectItem>
+                        <SelectItem value="deforestacion">Deforestación</SelectItem>
+                        <SelectItem value="contaminacion">Contaminación</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                {/* Lista de reportes estilo posts de Facebook */}
+                {loading ? (
+                  <div className="flex justify-center p-12"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-eco-primary"></div></div>
+                ) : alertasFiltradas.length === 0 ? (
+                  <div className="bg-white rounded-lg shadow p-12 text-center">
+                    <AlertCircle className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                    <h3 className="text-xl font-semibold text-gray-700 mb-2">No hay reportes</h3>
+                    <p className="text-gray-500">Intenta ajustar los filtros o crea un nuevo reporte</p>
+                  </div>
+                ) : (
+                  alertasFiltradas.map((alerta) => {
+                    const IconoCategoria = iconosCategoria[alerta.categoria] || AlertCircle
+                    return (
+                      <div key={alerta.id} className="bg-white rounded-lg shadow hover:shadow-lg transition-shadow">
+                        {/* Header del post */}
+                        <div className="p-4 flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <Avatar className="w-10 h-10">
+                              <AvatarFallback className="bg-eco-secondary text-white">
+                                {alerta.autor
+                                  .split(" ")
+                                  .map((n) => n[0])
+                                  .join("")}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <p className="font-semibold text-gray-900">{alerta.autor}</p>
+                              <div className="flex items-center gap-2 text-xs text-gray-500">
+                                <span>{alerta.fecha}</span>
+                                <span>•</span>
+                                <MapPin className="w-3 h-3" />
+                                <span>{alerta.ubicacion}</span>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Badge className={`${coloresEstado[alerta.estado]} capitalize`}>
+                              {alerta.estado.replace("_", " ")}
+                            </Badge>
+
+                            {/* Dropdown for Edit/Delete if owner */}
+                            {user && Number(user.id_usr) === Number(alerta.id_usuario) && (
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                    <MoreVertical className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem onClick={() => router.push(`/dashboard/edit-report/${alerta.id}`)}>
+                                    <Edit className="mr-2 h-4 w-4" />
+                                    Editar
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => deleteReport(alerta.id)} className="text-red-600">
+                                    <Trash2 className="mr-2 h-4 w-4" />
+                                    Eliminar
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Contenido del post */}
+                        <div className="px-4 pb-3">
+                          <div className="flex items-center gap-2 mb-2">
+                            <div className="w-6 h-6 bg-eco-primary/10 rounded-full flex items-center justify-center">
+                              <IconoCategoria className="w-4 h-4 text-eco-primary" />
+                            </div>
+                            <Badge variant="outline" className="capitalize text-xs">
+                              {alerta.categoria}
+                            </Badge>
+                          </div>
+                          <h3 className="text-lg font-semibold text-gray-900 mb-2">{alerta.titulo}</h3>
+                          <p className="text-gray-700">{alerta.descripcion}</p>
+                        </div>
+
+                        {/* Imagen */}
+                        {alerta.imagen && (
+                          <div className="relative">
+                            <img
+                              src={alerta.imagen || "/placeholder.svg"}
+                              alt={alerta.titulo}
+                              className="w-full h-96 object-cover"
+                            />
+                          </div>
+                        )}
+
+                        {/* Estadísticas */}
+                        <div className="px-4 py-2 flex items-center justify-between text-sm text-gray-500 border-b">
+                          <div className="flex items-center gap-1">
+                            <ThumbsUp className="w-4 h-4 fill-eco-primary text-eco-primary" />
+                            <span>{alerta.likes}</span>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <span>{alerta.comentarios} comentarios</span>
+                            <span>{alerta.vistas} vistas</span>
+                          </div>
+                        </div>
+
+                        {/* Acciones */}
+                        <div className="px-4 py-2 flex items-center justify-around">
+                          <Button
+                            variant="ghost"
+                            className={`flex-1 hover:bg-gray-100 ${alerta.liked_by_me ? 'text-red-600 bg-red-50/50' : 'text-gray-600 hover:text-red-500'}`}
+                            onClick={() => handleLike(alerta.id)}
+                          >
+                            <ThumbsUp className={`w-5 h-5 mr-2 ${alerta.liked_by_me ? 'fill-red-600' : ''}`} />
+                            {alerta.liked_by_me ? 'Te gusta' : 'Me gusta'}
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            className="flex-1 text-gray-600 hover:bg-gray-100 hover:text-blue-500"
+                            onClick={() => setSelectedReportId(alerta.id)}
+                          >
+                            <MessageSquare className="w-5 h-5 mr-2" />
+                            Comentar
+                          </Button>
+                        </div>
+                      </div>
+                    )
+                  })
+                )}
+              </>
             )}
           </main>
 
@@ -573,7 +837,7 @@ export default function DashboardPage() {
                       </div>
                       <span className="text-sm text-gray-700">Reportes</span>
                     </div>
-                    <span className="font-bold text-eco-primary">--</span>
+                    <span className="font-bold text-eco-primary">{userStats.totalReportes}</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
@@ -582,37 +846,37 @@ export default function DashboardPage() {
                       </div>
                       <span className="text-sm text-gray-700">Activos</span>
                     </div>
-                    <span className="font-bold text-yellow-600">
-                      {alertas.filter((a) => a.estado === "activo").length}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-                        <Leaf className="w-4 h-4 text-green-600" />
-                      </div>
-                      <span className="text-sm text-gray-700">Resueltos</span>
-                    </div>
-                    <span className="font-bold text-green-600">
-                      {alertas.filter((a) => a.estado === "resuelto").length}
-                    </span>
+                    <span className="font-bold text-yellow-600">{userStats.activos}</span>
                   </div>
                 </div>
               </div>
 
-              {/* Contactos o sugerencias */}
+              {/* Actividad reciente */}
               <div className="bg-white rounded-lg shadow p-4">
                 <h3 className="font-semibold text-gray-900 mb-3">Actividad reciente</h3>
                 <div className="space-y-2 text-sm text-gray-600">
-                  <p>📊 3 nuevos reportes hoy</p>
-                  <p>✅ 2 casos resueltos esta semana</p>
-                  <p>🎯 89% de efectividad</p>
+                  <p>📊 {reportesHoy} {reportesHoy === 1 ? 'nuevo reporte' : 'nuevos reportes'} hoy</p>
                 </div>
               </div>
             </div>
           </aside>
         </div>
       </div>
-    </div>
+
+      <CommentsModal
+        isOpen={!!selectedReportId}
+        onClose={() => setSelectedReportId(null)}
+        reportId={selectedReportId}
+        onCommentAdded={() => {
+          if (!selectedReportId) return;
+          setAlertas(prev => prev.map(a =>
+            a.id === selectedReportId ? { ...a, comentarios: (a.comentarios || 0) + 1 } : a
+          ));
+          setTrendingReports(prev => prev.map(r =>
+            r.id_reporte === selectedReportId ? { ...r, comentarios: (r.comentarios || 0) + 1 } : r
+          ));
+        }}
+      />
+    </div >
   )
 }

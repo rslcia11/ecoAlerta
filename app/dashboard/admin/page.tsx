@@ -23,7 +23,15 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog"
-import { ArrowLeft, Check, X, Eye, Loader2, User } from "lucide-react"
+import { ArrowLeft, Check, X, Eye, Loader2, User, Filter } from "lucide-react"
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select"
+import { Input } from "@/components/ui/input"
 
 interface Report {
     id_reporte: number
@@ -32,6 +40,8 @@ interface Report {
     longitud: number
     estado: string
     id_categoria: number
+    categoria_nombre: string
+    creado_en: string
     usuario_nombre: string
     usuario_apellido: string
     usuario_cedula?: string
@@ -40,13 +50,36 @@ interface Report {
     imagen?: string
 }
 
+// Función para formatear tiempo relativo
+function formatRelativeTime(dateString: string): string {
+    if (!dateString) return 'Sin fecha';
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return 'Hace un momento';
+    if (diffMins < 60) return `Hace ${diffMins} min`;
+    if (diffHours < 24) return `Hace ${diffHours}h`;
+    if (diffDays < 7) return `Hace ${diffDays}d`;
+    return date.toLocaleDateString('es-EC', { day: '2-digit', month: 'short' });
+}
+
 export default function AdminDashboard() {
     const router = useRouter()
     const { user, loading: authLoading } = useAuth()
     const [reports, setReports] = useState<Report[]>([])
+    const [filteredReports, setFilteredReports] = useState<Report[]>([])
     const [loading, setLoading] = useState(true)
     const [selectedReport, setSelectedReport] = useState<Report | null>(null)
     const [actionLoading, setActionLoading] = useState(false)
+
+    // Filtros
+    const [filterCategoria, setFilterCategoria] = useState<string>("all")
+    const [filterEstado, setFilterEstado] = useState<string>("all")
+    const [filterFecha, setFilterFecha] = useState<string>("")
 
     useEffect(() => {
         if (!authLoading) {
@@ -61,14 +94,42 @@ export default function AdminDashboard() {
     const fetchPendingReports = async () => {
         try {
             setLoading(true)
-            const res = await api.get('/reportes/pendientes')
+            const res = await api.get('/reportes/admin')
             setReports(res.data.data)
+            setFilteredReports(res.data.data)
         } catch (error) {
             console.error("Error fetching admin reports:", error)
         } finally {
             setLoading(false)
         }
     }
+
+    // Aplicar filtros
+    useEffect(() => {
+        let result = [...reports]
+
+        if (filterCategoria !== "all") {
+            result = result.filter(r => r.categoria_nombre === filterCategoria)
+        }
+        if (filterEstado !== "all") {
+            result = result.filter(r => r.estado === filterEstado)
+        }
+        if (filterFecha) {
+            result = result.filter(r => {
+                if (!r.creado_en) return false
+                const reportDate = new Date(r.creado_en).toISOString().split('T')[0]
+                return reportDate === filterFecha
+            })
+        }
+
+        setFilteredReports(result)
+    }, [reports, filterCategoria, filterEstado, filterFecha])
+
+    // Obtener categorías únicas
+    const categorias = [...new Set(reports.map(r => r.categoria_nombre).filter(Boolean))]
+
+    // Estados predefinidos
+    const estados = ['por aprobar', 'Aprobado', 'Rechazado', 'en progreso', 'culminado']
 
     const handleUpdateStatus = async (id: number, verifyStatus: 'Aprobado' | 'Rechazado') => {
         try {
@@ -108,7 +169,43 @@ export default function AdminDashboard() {
 
                 <Card>
                     <CardHeader>
-                        <CardTitle>Alertas Pendientes de Aprobación</CardTitle>
+                        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                            <CardTitle>Gestión de Alertas</CardTitle>
+                            <div className="flex flex-wrap gap-3 items-center">
+                                <div className="flex items-center gap-2">
+                                    <Filter className="w-4 h-4 text-gray-500" />
+                                    <span className="text-sm text-gray-500">Filtros:</span>
+                                </div>
+                                <Input
+                                    type="date"
+                                    value={filterFecha}
+                                    onChange={(e) => setFilterFecha(e.target.value)}
+                                    className="w-40"
+                                />
+                                <Select value={filterCategoria} onValueChange={setFilterCategoria}>
+                                    <SelectTrigger className="w-44">
+                                        <SelectValue placeholder="Categoría" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">Todas las categorías</SelectItem>
+                                        {categorias.map(cat => (
+                                            <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                <Select value={filterEstado} onValueChange={setFilterEstado}>
+                                    <SelectTrigger className="w-40">
+                                        <SelectValue placeholder="Estado" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">Todos los estados</SelectItem>
+                                        {estados.map(est => (
+                                            <SelectItem key={est} value={est}>{est}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
                     </CardHeader>
                     <CardContent>
                         {loading ? (
@@ -119,7 +216,7 @@ export default function AdminDashboard() {
                             <Table>
                                 <TableHeader>
                                     <TableRow>
-                                        <TableHead>ID</TableHead>
+                                        <TableHead>Fecha</TableHead>
                                         <TableHead>Usuario</TableHead>
                                         <TableHead>Descripción</TableHead>
                                         <TableHead>Categoría</TableHead>
@@ -128,9 +225,11 @@ export default function AdminDashboard() {
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {reports.map((report) => (
+                                    {filteredReports.map((report) => (
                                         <TableRow key={report.id_reporte}>
-                                            <TableCell className="font-medium">#{report.id_reporte}</TableCell>
+                                            <TableCell className="text-sm text-gray-500">
+                                                {formatRelativeTime(report.creado_en)}
+                                            </TableCell>
                                             <TableCell>
                                                 <div className="flex flex-col">
                                                     <span className="font-medium">{report.usuario_nombre} {report.usuario_apellido}</span>
@@ -140,7 +239,7 @@ export default function AdminDashboard() {
                                                 {report.descripcion}
                                             </TableCell>
                                             <TableCell>
-                                                <Badge variant="outline">{report.id_categoria}</Badge>
+                                                <Badge variant="outline">{report.categoria_nombre || 'Sin categoría'}</Badge>
                                             </TableCell>
                                             <TableCell>
                                                 <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200">

@@ -30,6 +30,7 @@ export default function NewReportPage() {
         id_categoria: "",
         latitud: "",
         longitud: "",
+        ubicacion: "",
     })
 
     // Construct default search query from user profile
@@ -84,6 +85,7 @@ export default function NewReportPage() {
             data.append('id_categoria', formData.id_categoria);
             data.append('latitud', formData.latitud);
             data.append('longitud', formData.longitud);
+            data.append('ubicacion', formData.ubicacion);
 
             if (files) {
                 for (let i = 0; i < files.length; i++) {
@@ -157,11 +159,12 @@ export default function NewReportPage() {
                     <div className="space-y-2">
                         <Label>Ubicación del incidente</Label>
                         <LocationPicker
-                            onLocationSelect={(lat, lng) => {
+                            onLocationSelect={(lat, lng, address) => {
                                 setFormData(prev => ({
                                     ...prev,
                                     latitud: lat.toString(),
-                                    longitud: lng.toString()
+                                    longitud: lng.toString(),
+                                    ubicacion: address || ""
                                 }))
                             }}
                             defaultSearchQuery={userLocationQuery}
