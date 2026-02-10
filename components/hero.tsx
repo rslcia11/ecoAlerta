@@ -47,12 +47,12 @@ export function Hero() {
                 <span className="text-xs font-bold uppercase tracking-wider text-eco-primary">Poder Ciudadano en tus manos</span>
               </div>
 
-              <h1 className="text-5xl md:text-7xl font-extrabold leading-[1.1] text-gray-900 tracking-tight">
+              <h1 className="text-4xl sm:text-5xl md:text-7xl font-extrabold leading-[1.1] text-gray-900 tracking-tight">
                 Eco <span className="text-transparent bg-clip-text bg-linear-to-r from-emerald-800 to-teal-900">Alerta</span>, <br />
                 Reporte Ciudadano.
               </h1>
 
-              <p className="text-lg md:text-xl text-gray-600 leading-relaxed max-w-2xl mx-auto lg:mx-0">
+              <p className="text-base sm:text-lg md:text-xl text-gray-600 leading-relaxed max-w-2xl mx-auto lg:mx-0">
                 La plataforma inteligente para reportar riesgos ambientales y fauna urbana. Conecta, actúa y transforma nuestra ciudad hacia un futuro más verde.
               </p>
             </motion.div>
@@ -78,7 +78,7 @@ export function Hero() {
               </Link>
             </motion.div>
 
-            <motion.div variants={itemVariants} className="grid grid-cols-3 gap-4 pt-4">
+            <motion.div variants={itemVariants} className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4">
               <div className="flex flex-col items-center lg:items-start p-4 rounded-2xl bg-gray-50/50 border border-gray-100 backdrop-blur-sm">
                 <div className="p-2 bg-eco-primary/10 rounded-lg mb-2">
                   <ShieldCheck className="w-5 h-5 text-eco-primary" />

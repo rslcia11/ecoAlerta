@@ -191,8 +191,8 @@ export default function AdminDashboard() {
                     <CardHeader>
                         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                             <CardTitle>Gestión de Alertas</CardTitle>
-                            <div className="flex flex-wrap gap-3 items-center">
-                                <div className="flex items-center gap-2">
+                            <div className="flex flex-col sm:flex-row flex-wrap gap-3 items-center w-full md:w-auto">
+                                <div className="flex items-center gap-2 w-full sm:w-auto">
                                     <Filter className="w-4 h-4 text-gray-500" />
                                     <span className="text-sm text-gray-500">Filtros:</span>
                                 </div>
@@ -200,10 +200,10 @@ export default function AdminDashboard() {
                                     type="date"
                                     value={filterFecha}
                                     onChange={(e) => setFilterFecha(e.target.value)}
-                                    className="w-40"
+                                    className="w-full sm:w-40"
                                 />
                                 <Select value={filterCategoria} onValueChange={setFilterCategoria}>
-                                    <SelectTrigger className="w-44">
+                                    <SelectTrigger className="w-full sm:w-44">
                                         <SelectValue placeholder="Categoría" />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -214,7 +214,7 @@ export default function AdminDashboard() {
                                     </SelectContent>
                                 </Select>
                                 <Select value={filterEstado} onValueChange={setFilterEstado}>
-                                    <SelectTrigger className="w-40">
+                                    <SelectTrigger className="w-full sm:w-40">
                                         <SelectValue placeholder="Estado" />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -225,7 +225,7 @@ export default function AdminDashboard() {
                                     </SelectContent>
                                 </Select>
                                 <Select value={filterProvincia} onValueChange={setFilterProvincia}>
-                                    <SelectTrigger className="w-40">
+                                    <SelectTrigger className="w-full sm:w-40">
                                         <SelectValue placeholder="Provincia" />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -246,62 +246,64 @@ export default function AdminDashboard() {
                         ) : reports.length === 0 ? (
                             <div className="py-8 text-center text-gray-500">No hay alertas pendientes.</div>
                         ) : (
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead>Fecha</TableHead>
-                                        <TableHead>Usuario</TableHead>
-                                        <TableHead>Descripción</TableHead>
-                                        <TableHead>Categoría</TableHead>
-                                        <TableHead>Estado</TableHead>
-                                        <TableHead className="text-right">Acciones</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {filteredReports.map((report) => (
-                                        <TableRow key={report.id_reporte}>
-                                            <TableCell className="text-sm text-gray-500">
-                                                {formatRelativeTime(report.creado_en)}
-                                            </TableCell>
-                                            <TableCell>
-                                                <div className="flex flex-col">
-                                                    <span className="font-medium">{report.usuario_nombre} {report.usuario_apellido}</span>
-                                                </div>
-                                            </TableCell>
-                                            <TableCell className="max-w-md truncate" title={report.descripcion}>
-                                                {report.descripcion}
-                                            </TableCell>
-                                            <TableCell>
-                                                <Badge variant="outline">{report.categoria_nombre || 'Sin categoría'}</Badge>
-                                            </TableCell>
-                                            <TableCell>
-                                                <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200">
-                                                    {report.estado}
-                                                </Badge>
-                                            </TableCell>
-                                            <TableCell className="text-right space-x-2">
-                                                <Button size="sm" variant="ghost" onClick={() => setSelectedReport(report)}>
-                                                    <Eye className="w-4 h-4 text-blue-600" />
-                                                </Button>
-                                                <Button
-                                                    size="sm"
-                                                    className="bg-green-600 hover:bg-green-700 text-white"
-                                                    onClick={() => handleUpdateStatus(report.id_reporte, 'Aprobado')}
-                                                >
-                                                    <Check className="w-4 h-4" />
-                                                </Button>
-                                                <Button
-                                                    size="sm"
-                                                    variant="destructive"
-                                                    onClick={() => handleUpdateStatus(report.id_reporte, 'Rechazado')}
-                                                >
-                                                    <X className="w-4 h-4" />
-                                                </Button>
-                                            </TableCell>
+                            <div className="relative w-full overflow-auto">
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead>Fecha</TableHead>
+                                            <TableHead>Usuario</TableHead>
+                                            <TableHead>Descripción</TableHead>
+                                            <TableHead>Categoría</TableHead>
+                                            <TableHead>Estado</TableHead>
+                                            <TableHead className="text-right">Acciones</TableHead>
                                         </TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {filteredReports.map((report) => (
+                                            <TableRow key={report.id_reporte}>
+                                                <TableCell className="text-sm text-gray-500 whitespace-nowrap">
+                                                    {formatRelativeTime(report.creado_en)}
+                                                </TableCell>
+                                                <TableCell className="whitespace-nowrap">
+                                                    <div className="flex flex-col">
+                                                        <span className="font-medium">{report.usuario_nombre} {report.usuario_apellido}</span>
+                                                    </div>
+                                                </TableCell>
+                                                <TableCell className="max-w-md truncate min-w-[200px]" title={report.descripcion}>
+                                                    {report.descripcion}
+                                                </TableCell>
+                                                <TableCell>
+                                                    <Badge variant="outline" className="whitespace-nowrap">{report.categoria_nombre || 'Sin categoría'}</Badge>
+                                                </TableCell>
+                                                <TableCell>
+                                                    <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200 whitespace-nowrap">
+                                                        {report.estado}
+                                                    </Badge>
+                                                </TableCell>
+                                                <TableCell className="text-right space-x-2 whitespace-nowrap">
+                                                    <Button size="sm" variant="ghost" onClick={() => setSelectedReport(report)}>
+                                                        <Eye className="w-4 h-4 text-blue-600" />
+                                                    </Button>
+                                                    <Button
+                                                        size="sm"
+                                                        className="bg-green-600 hover:bg-green-700 text-white"
+                                                        onClick={() => handleUpdateStatus(report.id_reporte, 'Aprobado')}
+                                                    >
+                                                        <Check className="w-4 h-4" />
+                                                    </Button>
+                                                    <Button
+                                                        size="sm"
+                                                        variant="destructive"
+                                                        onClick={() => handleUpdateStatus(report.id_reporte, 'Rechazado')}
+                                                    >
+                                                        <X className="w-4 h-4" />
+                                                    </Button>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            </div>
                         )}
                     </CardContent>
                 </Card>

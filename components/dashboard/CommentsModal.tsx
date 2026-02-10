@@ -91,7 +91,7 @@ export function CommentsModal({ isOpen, onClose, reportId, onCommentAdded }: Com
 
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-            <DialogContent className="sm:max-w-[500px] h-[600px] flex flex-col">
+            <DialogContent className="sm:max-w-[500px] h-[80vh] sm:h-[600px] flex flex-col">
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
                         <MessageSquare className="w-5 h-5" />

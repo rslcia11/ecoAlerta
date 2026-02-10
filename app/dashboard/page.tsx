@@ -402,101 +402,100 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-[#f0f2f5]">
-      <header className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-50">
+      <header className="bg-white border-b border-gray-200 shadow-sm md:sticky top-0 z-50">
         <div className="max-w-[1440px] mx-auto px-4 py-2">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             {/* Logo y búsqueda */}
-            <div className="flex items-center gap-4 flex-1">
-              <Link href="/dashboard" className="flex items-center gap-2">
+            <div className="flex items-center gap-4 flex-1 w-full md:w-auto">
+              <Link href="/dashboard" className="flex items-center gap-2 shrink-0">
                 <div className="w-10 h-10 bg-eco-primary rounded-xl flex items-center justify-center shadow-md shadow-eco-primary/10">
                   <ShieldCheck className="w-6 h-6 text-white" />
                 </div>
               </Link>
 
-              <div className="relative max-w-md w-full hidden md:block">
+              <div className="relative max-w-md w-full">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <Input
                   type="text"
                   placeholder="Buscar en Eco Alerta..."
                   value={busqueda}
                   onChange={(e) => setBusqueda(e.target.value)}
-                  className="pl-10 h-10 bg-[#f0f2f5] border-none rounded-full"
+                  className="pl-10 h-10 bg-[#f0f2f5] border-none rounded-full w-full"
                 />
               </div>
             </div>
 
-            {/* Acciones centrales */}
-            <div className="flex items-center gap-2 justify-center flex-1">
-              <Button variant="ghost" size="icon" className="w-28 h-12 rounded-lg hover:bg-gray-100 text-eco-primary">
-                <Home className="w-6 h-6" />
-              </Button>
-            </div>
+            {/* Acciones (Ocultas en móvil para simplificar o movidas al bottom bar si existiera, por ahora las mantenemos adjustadas) */}
+            <div className="flex items-center justify-between md:justify-end gap-2 w-full md:w-auto">
+              <div className="flex items-center md:hidden">
+                {/* Mobile Menu Trigger could go here if needed, but we have sidebar */}
+              </div>
 
-            {/* Acciones del usuario */}
-            <div className="flex items-center gap-2 justify-end flex-1">
-              <Button asChild className="bg-eco-primary hover:bg-eco-primary-dark text-white font-semibold rounded-lg">
-                <Link href="/dashboard/new-report">
-                  <Plus className="w-5 h-5 mr-2" />
-                  Crear
-                </Link>
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button asChild className="bg-eco-primary hover:bg-eco-primary-dark text-white font-semibold rounded-lg size-sm md:size-default">
+                  <Link href="/dashboard/new-report">
+                    <Plus className="w-5 h-5 md:mr-2" />
+                    <span className="hidden md:inline">Crear</span>
+                  </Link>
+                </Button>
 
-              <Button variant="ghost" size="icon" className="relative hover:bg-gray-100 w-10 h-10 rounded-full">
-                <Bell className="w-5 h-5 text-gray-700" />
-                <span className="absolute top-1 right-1 w-2 h-2 bg-eco-error rounded-full" />
-              </Button>
+                <Button variant="ghost" size="icon" className="relative hover:bg-gray-100 w-10 h-10 rounded-full">
+                  <Bell className="w-5 h-5 text-gray-700" />
+                  <span className="absolute top-1 right-1 w-2 h-2 bg-eco-error rounded-full" />
+                </Button>
 
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <button className="hover:bg-gray-100 rounded-full p-1 transition-colors">
-                    <UserAvatar
-                      nombre={user?.nombre}
-                      apellido={user?.apellido}
-                      avatarUrl={user?.avatar}
-                      className="w-10 h-10 border-2 border-eco-primary"
-                    />
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-64">
-                  <DropdownMenuLabel className="pb-0">
-                    <div className="flex items-center gap-3 py-2">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button className="hover:bg-gray-100 rounded-full p-1 transition-colors">
                       <UserAvatar
                         nombre={user?.nombre}
                         apellido={user?.apellido}
                         avatarUrl={user?.avatar}
-                        className="w-12 h-12"
+                        className="w-10 h-10 border-2 border-eco-primary"
                       />
-                      <div>
-                        <p className="font-semibold text-gray-900">{user?.nombre || "Usuario"} {user?.apellido || ""}</p>
-                        <p className="text-xs text-gray-500">{user?.rol || "Invitado"}</p>
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-64">
+                    <DropdownMenuLabel className="pb-0">
+                      <div className="flex items-center gap-3 py-2">
+                        <UserAvatar
+                          nombre={user?.nombre}
+                          apellido={user?.apellido}
+                          avatarUrl={user?.avatar}
+                          className="w-12 h-12"
+                        />
+                        <div>
+                          <p className="font-semibold text-gray-900">{user?.nombre || "Usuario"} {user?.apellido || ""}</p>
+                          <p className="text-xs text-gray-500">{user?.rol || "Invitado"}</p>
+                        </div>
                       </div>
-                    </div>
-                  </DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild>
-                    <Link href="/dashboard/profile" className="cursor-pointer">
-                      <User className="w-4 h-4 mr-2" />
-                      Ver perfil
-                    </Link>
-                  </DropdownMenuItem>
-                  {user?.rol === 'admin' && (
-                    <>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem asChild>
-                        <Link href="/dashboard/admin" className="cursor-pointer text-blue-600 font-medium">
-                          <Award className="w-4 h-4 mr-2" />
-                          Panel Admin
-                        </Link>
-                      </DropdownMenuItem>
-                    </>
-                  )}
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleLogout} className="text-eco-error cursor-pointer">
-                    <LogOut className="w-4 h-4 mr-2" />
-                    Cerrar sesión
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+                    </DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem asChild>
+                      <Link href="/dashboard/profile" className="cursor-pointer">
+                        <User className="w-4 h-4 mr-2" />
+                        Ver perfil
+                      </Link>
+                    </DropdownMenuItem>
+                    {user?.rol === 'admin' && (
+                      <>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem asChild>
+                          <Link href="/dashboard/admin" className="cursor-pointer text-blue-600 font-medium">
+                            <Award className="w-4 h-4 mr-2" />
+                            Panel Admin
+                          </Link>
+                        </DropdownMenuItem>
+                      </>
+                    )}
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={handleLogout} className="text-eco-error cursor-pointer">
+                      <LogOut className="w-4 h-4 mr-2" />
+                      Cerrar sesión
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
             </div>
           </div>
         </div>
@@ -505,7 +504,7 @@ export default function DashboardPage() {
       <div className="max-w-[1440px] mx-auto px-4 py-4">
         <div className="grid grid-cols-12 gap-4">
           {/* Sidebar izquierdo */}
-          <aside className="col-span-12 lg:col-span-3 space-y-2">
+          <aside className="col-span-12 lg:col-span-3 space-y-2 hidden lg:block">
             <div className="sticky top-20">
               {/* Perfil del usuario */}
               <Link
@@ -578,8 +577,41 @@ export default function DashboardPage() {
             </div>
           </aside>
 
+          {/* Mobile Nav (Horizontal Scroll or simple bar) could be added here for mobile view since sidebar is hidden on mobile */}
+          <div className="col-span-12 lg:hidden mb-2 overflow-x-auto pb-2">
+            <div className="flex gap-2">
+              <Button
+                variant={activeTab === "feed" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setActiveTab("feed")}
+                className={activeTab === "feed" ? "bg-eco-primary" : ""}
+              >
+                Inicio
+              </Button>
+              <Button
+                variant={activeTab === "tendencias" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setActiveTab("tendencias")}
+                className={activeTab === "tendencias" ? "bg-blue-600 hover:bg-blue-700" : ""}
+              >
+                Tendencias
+              </Button>
+              <Button
+                variant={activeTab === "estadisticas" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setActiveTab("estadisticas")}
+                className={activeTab === "estadisticas" ? "bg-orange-600 hover:bg-orange-700" : ""}
+              >
+                Estadísticas
+              </Button>
+              <Button variant="outline" size="sm" asChild>
+                <Link href="/dashboard/my-reports">Mis Reportes</Link>
+              </Button>
+            </div>
+          </div>
+
           {/* Feed central */}
-          <main className="col-span-12 lg:col-span-6 space-y-4">
+          <main className="col-span-12 lg:col-span-9 space-y-4">
             {/* Tendencias Tab */}
             {/* Tendencias Tab */}
             {activeTab === "tendencias" && (

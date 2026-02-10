@@ -27,7 +27,7 @@ export function Header() {
 
   return (
     <header
-      className={`fixed top-0 left-0 right-0 z-100 transition-all duration-500 ${isScrolled ? "py-3 bg-white/90 backdrop-blur-2xl shadow-sm border-b border-gray-100" : "py-6 bg-transparent"
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${isScrolled ? "py-3 bg-white/90 backdrop-blur-2xl shadow-sm border-b border-gray-100" : "py-6 bg-transparent"
         }`}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -89,7 +89,7 @@ export function Header() {
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
-            className="lg:hidden absolute top-full left-0 right-0 bg-white shadow-2xl border-b border-gray-100 overflow-hidden"
+            className="lg:hidden absolute top-full left-0 right-0 bg-white shadow-2xl border-b border-gray-100 overflow-y-auto max-h-[80vh]"
           >
             <div className="px-6 py-10 space-y-8">
               <div className="grid gap-4">
