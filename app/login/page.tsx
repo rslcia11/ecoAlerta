@@ -5,7 +5,7 @@ import type React from "react"
 import { useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { Eye, EyeOff, Mail, Lock, ArrowLeft, CheckCircle2, AlertCircle, Leaf } from "lucide-react"
+import { Eye, EyeOff, Mail, Lock, ArrowLeft, CheckCircle2, AlertCircle, ShieldCheck } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -135,12 +135,12 @@ export default function LoginPage() {
         <div className="max-w-md w-full">
           {/* Título principal */}
           <div className="text-center mb-8 animate-fade-in-up">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-eco-primary rounded-full mb-4">
-              <Leaf className="w-8 h-8 text-white" />
+            <div className="inline-flex items-center justify-center w-20 h-20 bg-eco-primary rounded-2xl mb-6 shadow-xl shadow-eco-primary/20">
+              <ShieldCheck className="w-10 h-10 text-white" />
             </div>
-            <h1 className="text-4xl md:text-5xl font-bold text-eco-primary-dark mb-3">BIENVENIDO</h1>
-            <div className="w-20 h-1 bg-eco-primary mx-auto mb-4" />
-            <p className="text-lg text-eco-gray-dark">Inicia sesión para continuar protegiendo el medio ambiente</p>
+            <h1 className="text-4xl md:text-5xl font-bold text-eco-primary-dark mb-3 tracking-tight">Bienvenido</h1>
+            <div className="w-20 h-1.5 bg-eco-primary mx-auto mb-6 rounded-full" />
+            <p className="text-lg text-eco-gray-dark">Inicia sesión para continuar con la vigilancia ambiental activa.</p>
           </div>
 
           {/* Formulario */}

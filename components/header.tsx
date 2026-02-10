@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { Leaf, Menu, X, LogIn } from "lucide-react"
+import { ShieldCheck, Menu, X, LogIn } from "lucide-react"
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 
@@ -34,14 +34,14 @@ export function Header() {
         <div className="flex items-center justify-between">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2.5 group transition-all">
-            <div className="w-11 h-11 bg-eco-primary rounded-2xl flex items-center justify-center shadow-lg shadow-eco-primary/25 group-hover:rotate-12 transition-transform duration-500">
-              <Leaf className="w-6 h-6 text-white" />
+            <div className="w-11 h-11 bg-eco-primary rounded-xl flex items-center justify-center shadow-lg shadow-eco-primary/20 group-hover:scale-105 transition-transform duration-500">
+              <ShieldCheck className="w-6 h-6 text-white" />
             </div>
             <div className="flex flex-col -space-y-1">
-              <span className="font-black text-2xl tracking-tighter text-gray-900">
+              <span className="font-bold text-2xl tracking-tighter text-gray-900">
                 Eco<span className="text-eco-primary">Alerta</span>
               </span>
-              <span className="text-[10px] uppercase font-black tracking-[0.2em] text-gray-400 group-hover:text-eco-primary transition-colors">Sistema de Reporte Ciudadano</span>
+              <span className="text-[10px] uppercase font-bold tracking-[0.2em] text-gray-400 group-hover:text-eco-primary transition-colors">Vigilancia Ambiental Activa</span>
             </div>
           </Link>
 

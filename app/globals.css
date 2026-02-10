@@ -4,102 +4,98 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  /* Paleta de colores Eco Alerta - Verde salvia 60% como primario */
-  /* Verde Salvia - Color principal ecológico - PREDOMINANTE */
-  --color-eco-primary: #7bb273;
-  --color-eco-primary-light: #94c896;
-  --color-eco-primary-dark: #5a8a52;
-  --color-eco-primary-lighter: #b8d9b3;
+  /* Paleta de colores Eco Alerta - Verde Bosque Profesional */
+  /* Verde Bosque - Color principal serio y ecológico */
+  --color-eco-primary: #064e3b;
+  --color-eco-primary-light: #065f46;
+  --color-eco-primary-dark: #022c22;
+  --color-eco-primary-lighter: #0f766e;
 
-  /* Teal Secundario - Apoyo visual */
-  --color-eco-secondary: #4a9c8c;
-  --color-eco-secondary-light: #6bb5a5;
+  /* Teal Secundario - Soporte Institucional */
+  --color-eco-secondary: #134e4a;
+  --color-eco-secondary-light: #115e59;
 
-  /* Amarillo Pálido - Acento destacador */
-  --color-eco-accent: #ffe3a3;
-  --color-eco-accent-dark: #f5d89a;
-
-  /* Neutrales */
+  /* Neutros Refinados */
   --color-eco-white: #ffffff;
-  --color-eco-gray-light: #e7ebe9;
-  --color-eco-gray-medium: #b8c6c2;
-  --color-eco-gray-dark: #4a5552;
+  --color-eco-gray-light: #f1f5f9;
+  --color-eco-gray-medium: #64748b;
+  --color-eco-gray-dark: #0f172a;
 
   /* Estados */
-  --color-eco-success: #4caf50;
-  --color-eco-warning: #ffc107;
-  --color-eco-error: #e63946;
-  --color-eco-info: #2196f3;
+  --color-eco-success: #059669;
+  --color-eco-warning: #d97706;
+  --color-eco-error: #dc2626;
+  --color-eco-info: #0284c7;
 
-  /* Cambiar fondo principal a verde claro para mayor predominancia */
-  --background: #f5f8f5;
-  --foreground: #1a1a1a;
+  /* Ajustes de fondo y estructura */
+  --background: #f8fafc;
+  --foreground: #020617;
   --card: #ffffff;
-  --card-foreground: #1a1a1a;
+  --card-foreground: #020617;
   --popover: #ffffff;
-  --popover-foreground: #1a1a1a;
-  --primary: #7bb273;
+  --popover-foreground: #020617;
+  --primary: #064e3b;
   --primary-foreground: #ffffff;
-  --secondary: #4a9c8c;
+  --secondary: #134e4a;
   --secondary-foreground: #ffffff;
-  --muted: #f0f0f0;
-  --muted-foreground: #666666;
-  --accent: #ffe3a3;
-  --accent-foreground: #1a1a1a;
-  --destructive: #e63946;
+  --muted: #f1f5f9;
+  --muted-foreground: #475569;
+  --accent: #f8fafc;
+  --accent-foreground: #064e3b;
+  --destructive: #dc2626;
   --destructive-foreground: #ffffff;
-  --border: #e7ebe9;
-  --input: #f5f8f5;
-  --ring: #7bb273;
-  --chart-1: #7bb273;
-  --chart-2: #4a9c8c;
-  --chart-3: #4caf50;
-  --chart-4: #ffc107;
-  --chart-5: #2196f3;
-  --radius: 0.625rem;
+  --border: #e2e8f0;
+  --input: #ffffff;
+  --ring: #064e3b;
+  --chart-1: #064e3b;
+  --chart-2: #134e4a;
+  --chart-3: #059669;
+  --chart-4: #d97706;
+  --chart-5: #0284c7;
+  --radius: 0.5rem;
   --sidebar: #ffffff;
-  --sidebar-foreground: #1a1a1a;
-  --sidebar-primary: #7bb273;
+  --sidebar-foreground: #020617;
+  --sidebar-primary: #064e3b;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #4a9c8c;
-  --sidebar-accent-foreground: #ffffff;
-  --sidebar-border: #e7ebe9;
-  --sidebar-ring: #7bb273;
+  --sidebar-accent: #f1f5f9;
+  --sidebar-accent-foreground: #064e3b;
+  --sidebar-border: #e2e8f0;
+  --sidebar-ring: #064e3b;
 }
 
 .dark {
-  --background: #0f1a0f;
-  --foreground: #f5f5f5;
-  --card: #1a2e1a;
-  --card-foreground: #f5f5f5;
-  --popover: #1a2e1a;
-  --popover-foreground: #f5f5f5;
-  --primary: #94c896;
-  --primary-foreground: #0f1a0f;
-  --secondary: #6bb5a5;
-  --secondary-foreground: #0f1a0f;
-  --muted: #2a3a2a;
-  --muted-foreground: #a0a0a0;
-  --accent: #ffe3a3;
-  --accent-foreground: #1a1a1a;
-  --destructive: #e63946;
+  --background: #020617;
+  --foreground: #f8fafc;
+  --card: #0f172a;
+  --card-foreground: #f8fafc;
+  --popover: #0f172a;
+  --popover-foreground: #f8fafc;
+  --primary: #10b981;
+  --primary-foreground: #020617;
+  --secondary: #14b8a6;
+  --secondary-foreground: #020617;
+  --muted: #1e293b;
+  --muted-foreground: #94a3b8;
+  --accent: #1e293b;
+  --accent-foreground: #f8fafc;
+  --destructive: #ef4444;
   --destructive-foreground: #ffffff;
-  --border: #2a3a2a;
-  --input: #1a2e1a;
-  --ring: #94c896;
-  --chart-1: #94c896;
-  --chart-2: #6bb5a5;
-  --chart-3: #4caf50;
-  --chart-4: #ffc107;
-  --chart-5: #2196f3;
-  --sidebar: #1a2e1a;
-  --sidebar-foreground: #f5f5f5;
-  --sidebar-primary: #94c896;
-  --sidebar-primary-foreground: #0f1a0f;
-  --sidebar-accent: #6bb5a5;
-  --sidebar-accent-foreground: #0f1a0f;
-  --sidebar-border: #2a3a2a;
-  --sidebar-ring: #94c896;
+  --border: #1e293b;
+  --input: #1e293b;
+  --ring: #10b981;
+  --chart-1: #10b981;
+  --chart-2: #14b8a6;
+  --chart-3: #10b981;
+  --chart-4: #fbbf24;
+  --chart-5: #3b82f6;
+  --sidebar: #0f172a;
+  --sidebar-foreground: #f8fafc;
+  --sidebar-primary: #10b981;
+  --sidebar-primary-foreground: #020617;
+  --sidebar-accent: #1e293b;
+  --sidebar-accent-foreground: #f8fafc;
+  --sidebar-border: #1e293b;
+  --sidebar-ring: #10b981;
 }
 
 @theme inline {
@@ -147,6 +143,7 @@
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
   }
@@ -165,81 +162,81 @@
   }
 }
 
-/* Clases de utilidad con colores ecológicos para usar directamente */
+/* Clases de utilidad con colores eco-forestal profesional */
 .bg-eco-primary {
-  background-color: #7bb273;
+  background-color: #064e3b;
 }
 
 .bg-eco-primary-light {
-  background-color: #94c896;
+  background-color: #065f46;
 }
 
 .bg-eco-primary-dark {
-  background-color: #5a8a52;
+  background-color: #022c22;
 }
 
 .bg-eco-primary-lighter {
-  background-color: #b8d9b3;
+  background-color: #0f766e;
 }
 
 .bg-eco-secondary {
-  background-color: #4a9c8c;
+  background-color: #134e4a;
 }
 
 .bg-eco-secondary-light {
-  background-color: #6bb5a5;
+  background-color: #115e59;
 }
 
 .bg-eco-accent {
-  background-color: #ffe3a3;
+  background-color: #f8fafc;
 }
 
 .bg-eco-gray-light {
-  background-color: #e7ebe9;
+  background-color: #f1f5f9;
 }
 
 .bg-eco-gray-medium {
-  background-color: #b8c6c2;
+  background-color: #64748b;
 }
 
 .bg-eco-gray-dark {
-  background-color: #4a5552;
+  background-color: #0f172a;
 }
 
 .bg-eco-success {
-  background-color: #4caf50;
+  background-color: #059669;
 }
 
 .bg-eco-warning {
-  background-color: #ffc107;
+  background-color: #d97706;
 }
 
 .bg-eco-error {
-  background-color: #e63946;
+  background-color: #dc2626;
 }
 
 .bg-eco-info {
-  background-color: #2196f3;
+  background-color: #0284c7;
 }
 
 .text-eco-primary {
-  color: #7bb273;
+  color: #064e3b;
 }
 
 .text-eco-primary-dark {
-  color: #5a8a52;
+  color: #022c22;
 }
 
 .text-eco-secondary {
-  color: #4a9c8c;
+  color: #134e4a;
 }
 
 .text-eco-gray-dark {
-  color: #4a5552;
+  color: #0f172a;
 }
 
 .text-eco-gray-medium {
-  color: #b8c6c2;
+  color: #64748b;
 }
 
 .text-eco-white {
@@ -247,31 +244,31 @@
 }
 
 .border-eco-primary {
-  border-color: #7bb273;
+  border-color: #064e3b;
 }
 
 .border-eco-secondary {
-  border-color: #4a9c8c;
+  border-color: #134e4a;
 }
 
 .hover\:bg-eco-primary\/10:hover {
-  background-color: rgb(123 178 115 / 0.1);
+  background-color: rgb(6 78 59 / 0.1);
 }
 
 .hover\:bg-eco-primary\/5:hover {
-  background-color: rgb(123 178 115 / 0.05);
+  background-color: rgb(6 78 59 / 0.05);
 }
 
 .hover\:bg-eco-primary:hover {
-  background-color: #7bb273;
+  background-color: #064e3b;
 }
 
 .hover\:bg-eco-primary-dark:hover {
-  background-color: #5a8a52;
+  background-color: #022c22;
 }
 
 .hover\:text-eco-primary:hover {
-  color: #7bb273;
+  color: #064e3b;
 }
 
 .hover\:text-white:hover {
@@ -279,35 +276,35 @@
 }
 
 .bg-eco-primary\/10 {
-  background-color: rgb(123 178 115 / 0.1);
+  background-color: rgb(6 78 59 / 0.1);
 }
 
 .bg-eco-primary\/20 {
-  background-color: rgb(123 178 115 / 0.2);
+  background-color: rgb(6 78 59 / 0.2);
 }
 
 .bg-eco-primary\/5 {
-  background-color: rgb(123 178 115 / 0.05);
+  background-color: rgb(6 78 59 / 0.05);
 }
 
 .bg-eco-secondary\/20 {
-  background-color: rgb(74 156 140 / 0.2);
+  background-color: rgb(19 78 74 / 0.2);
 }
 
 .bg-eco-success\/10 {
-  background-color: rgb(76 175 80 / 0.1);
+  background-color: rgb(5 150 105 / 0.1);
 }
 
 .text-eco-success {
-  color: #4caf50;
+  color: #059669;
 }
 
 .border-eco-success\/20 {
-  border-color: rgb(76 175 80 / 0.2);
+  border-color: rgb(5 150 105 / 0.2);
 }
 
 .border-eco-primary\/20 {
-  border-color: rgb(123 178 115 / 0.2);
+  border-color: rgb(6 78 59 / 0.2);
 }
 
 /* Animaciones personalizadas */
@@ -316,6 +313,7 @@
     opacity: 0;
     transform: translateY(20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -326,29 +324,35 @@
   from {
     transform: scale(0);
   }
+
   to {
     transform: scale(1);
   }
 }
 
 @keyframes shake {
+
   0%,
   100% {
     transform: translateX(0);
   }
+
   25% {
     transform: translateX(-10px);
   }
+
   75% {
     transform: translateX(10px);
   }
 }
 
 @keyframes bounce-slow {
+
   0%,
   100% {
     transform: translateY(0);
   }
+
   50% {
     transform: translateY(-10px);
   }
@@ -358,6 +362,7 @@
   from {
     opacity: 0;
   }
+
   to {
     opacity: 1;
   }

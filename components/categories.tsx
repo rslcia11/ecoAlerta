@@ -98,30 +98,32 @@ export function Categories() {
                 viewport={{ once: true }}
                 transition={{ delay: index * 0.1 }}
               >
-                <Card className="group relative bg-gray-50/50 border-gray-100 hover:bg-white hover:shadow-[0_20px_40px_rgba(0,0,0,0.04)] hover:border-gray-200 transition-all duration-500 rounded-[2.5rem] p-10 h-full flex flex-col justify-between overflow-hidden cursor-pointer">
-                  {/* Hover Background Glow */}
-                  <div className={`absolute -right-10 -bottom-10 w-40 h-40 bg-linear-to-br ${category.color} opacity-0 group-hover:opacity-5 blur-[80px] transition-opacity duration-700`} />
+                <Link href="/login" className="block h-full">
+                  <Card className="group relative bg-gray-50/50 border-gray-100 hover:bg-white hover:shadow-[0_30px_60px_rgba(0,0,0,0.06)] hover:border-eco-primary/20 transition-all duration-500 rounded-[2.5rem] p-10 h-full flex flex-col justify-between overflow-hidden">
+                    {/* Hover Background Glow */}
+                    <div className={`absolute -right-10 -bottom-10 w-40 h-40 bg-linear-to-br ${category.color} opacity-0 group-hover:opacity-5 blur-[80px] transition-opacity duration-700`} />
 
-                  <div className="relative z-10 space-y-6">
-                    <div className={`w-16 h-16 bg-linear-to-br ${category.color} rounded-2xl flex items-center justify-center shadow-lg transform group-hover:-rotate-6 transition-transform duration-500`}>
-                      <Icon className="w-8 h-8 text-white" />
+                    <div className="relative z-10 space-y-6">
+                      <div className={`w-16 h-16 bg-linear-to-br ${category.color} rounded-2xl flex items-center justify-center shadow-lg transform group-hover:-rotate-6 transition-transform duration-500`}>
+                        <Icon className="w-8 h-8 text-white" />
+                      </div>
+
+                      <div className="space-y-4">
+                        <h3 className="text-2xl font-bold text-gray-900">
+                          {category.title}
+                        </h3>
+                        <p className="text-gray-600 leading-relaxed text-sm">
+                          {category.description}
+                        </p>
+                      </div>
                     </div>
 
-                    <div className="space-y-4">
-                      <h3 className="text-2xl font-bold text-gray-900">
-                        {category.title}
-                      </h3>
-                      <p className="text-gray-600 leading-relaxed text-sm">
-                        {category.description}
-                      </p>
+                    <div className="relative z-10 pt-8 mt-auto flex items-center gap-2 text-xs font-bold text-gray-400 group-hover:text-eco-primary transition-colors">
+                      <span>REPORTAR AHORA</span>
+                      <ArrowUpRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-all transform translate-y-2 group-hover:translate-y-0" />
                     </div>
-                  </div>
-
-                  <div className="relative z-10 pt-8 mt-auto flex items-center gap-2 text-xs font-bold text-gray-400 group-hover:text-eco-primary transition-colors">
-                    <span>REPORTAR AHORA</span>
-                    <ArrowUpRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-all transform translate-y-2 group-hover:translate-y-0" />
-                  </div>
-                </Card>
+                  </Card>
+                </Link>
               </motion.div>
             )
           })}

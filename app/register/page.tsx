@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
+import { motion } from "framer-motion"
 import { useAuth } from "@/app/context/AuthContext"
 import api from "@/app/services/api"
 
@@ -52,6 +53,7 @@ export default function RegisterPage() {
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [touchedFields, setTouchedFields] = useState<Record<string, boolean>>({})
   const [currentStep, setCurrentStep] = useState(1)
+  const [showSuccessModal, setShowSuccessModal] = useState(false)
 
   const [formData, setFormData] = useState({
     nombre: "",
@@ -114,6 +116,8 @@ export default function RegisterPage() {
           error = "Este campo es requerido"
         } else if (value.toString().length < 2) {
           error = "Debe tener al menos 2 caracteres"
+        } else if (/\d/.test(value.toString())) {
+          error = "No se permiten números"
         }
         break
 
@@ -186,7 +190,16 @@ export default function RegisterPage() {
   }
 
   const handleChange = (name: string, value: string | boolean) => {
-    setFormData((prev) => ({ ...prev, [name]: value }))
+    let finalValue = value
+
+    // Restricción para nombres y apellidos: no permitir números
+    if (name === "nombre" || name === "apellido") {
+      if (typeof value === "string") {
+        finalValue = value.replace(/[0-9]/g, "")
+      }
+    }
+
+    setFormData((prev) => ({ ...prev, [name]: finalValue }))
 
     // Validar si el campo ya fue tocado
     if (touchedFields[name]) {
@@ -197,15 +210,20 @@ export default function RegisterPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    console.log("Submit iniciado con datos:", formData);
 
     // Validar todos los campos
     const newErrors: Record<string, string> = {}
     Object.keys(formData).forEach((key) => {
       const error = validateField(key, formData[key as keyof typeof formData])
-      if (error) newErrors[key] = error as string
+      if (error) {
+        console.warn(`Error de validación en campo '${key}': ${error}`);
+        newErrors[key] = error as string
+      }
     })
 
     if (Object.keys(newErrors).length > 0) {
+      console.error("Errores de validación encontrados:", newErrors);
       setErrors(newErrors)
       setTouchedFields(Object.keys(formData).reduce((acc, key) => ({ ...acc, [key]: true }), {}))
       return
@@ -222,19 +240,16 @@ export default function RegisterPage() {
         password: formData.contrasena,
         cedula: formData.cedula,
         telefono: formData.telefono,
-        id_ciudad: Number(formData.id_ciudad)
+        direccion: formData.direccion,
+        id_ciudad: Number(formData.id_ciudad),
+        id_provincia: Number(formData.provincia)
       });
 
-      const { token, usuario, user } = response.data; // Backend might return user or usuario
-      const userData = usuario || user;
+      // Show success modal
+      setShowSuccessModal(true);
 
-      // Auto-login
-      if (token && userData) {
-        login(token, userData);
-        router.push("/dashboard"); // Redirect directly to dashboard
-      } else {
-        router.push("/register/success");
-      }
+      // We'll give it a moment for the user to see the modal before or let them close it
+      // For now, let's wait a few seconds then redirect, or add a button in the modal.
 
     } catch (error: any) {
       console.error("Error:", error);
@@ -249,20 +264,8 @@ export default function RegisterPage() {
     return touchedFields[name] && !errors[name] && formData[name as keyof typeof formData]
   }
 
-  const calculateProgress = () => {
-    const totalFields = Object.keys(formData).length - 2 // Exclude 'provincia' and 'id_ciudad' if they are not considered in progress
-    const filledFields = Object.values(formData).filter((f) => {
-      if (typeof f === "string" && f.trim() !== "") return true
-      if (typeof f === "boolean" && f === true) return true
-      return false
-    }).length
-    return Math.round((filledFields / totalFields) * 100)
-  }
-
-  const progress = calculateProgress()
-
   return (
-    // Diseño minimalista con título centrado
+    // Diseño minimalista con tono profesional
     <div className="min-h-screen bg-linear-to-br from-white via-eco-primary/5 to-eco-secondary/10">
       <div className="container mx-auto px-4 pt-6">
         <Link
@@ -276,33 +279,19 @@ export default function RegisterPage() {
 
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-2xl mx-auto">
-          {/* Título principal centrado */}
+          {/* Título principal elegante */}
           <div className="text-center mb-12 animate-fade-in-up">
-            <h1 className="text-5xl md:text-6xl font-bold text-eco-primary-dark mb-4">CREA TU CUENTA</h1>
-            <div className="w-24 h-1 bg-eco-primary mx-auto mb-6" />
-            <p className="text-lg text-eco-gray-dark max-w-md mx-auto">
-              Únete a la comunidad que protege el medio ambiente en Loja
+            <h1 className="text-4xl md:text-5xl font-bold text-eco-primary-dark mb-4 tracking-tight">Crea tu cuenta</h1>
+            <div className="w-20 h-1.5 bg-eco-primary mx-auto mb-6 rounded-full" />
+            <p className="text-lg text-eco-gray-dark max-w-sm mx-auto">
+              Únete a la comunidad dedicada a la protección y vigilancia ambiental activa.
             </p>
           </div>
 
           {/* Formulario con diseño limpio */}
-          <div className="bg-white rounded-2xl shadow-xl border border-eco-gray-light/50 overflow-hidden">
-            {/* Barra de progreso */}
-            <div className="bg-eco-primary/5 px-6 py-4 border-b border-eco-gray-light/30">
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-sm font-medium text-eco-gray-dark">Progreso del registro</span>
-                <span className="text-sm font-bold text-eco-primary">{progress}%</span>
-              </div>
-              <div className="h-2 bg-eco-gray-light rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-linear-to-r from-eco-primary to-eco-secondary transition-all duration-500 ease-out"
-                  style={{ width: `${progress}%` }}
-                />
-              </div>
-            </div>
-
+          <div className="bg-white rounded-3xl shadow-2xl border border-gray-100 overflow-hidden">
             {/* Formulario */}
-            <form onSubmit={handleSubmit} className="p-8 space-y-8">
+            <form onSubmit={handleSubmit} className="p-8 md:p-12 space-y-10">
               {/* Error general */}
               {errors.submit && (
                 <div className="bg-eco-error/10 border border-eco-error/20 rounded-lg p-4 flex items-start gap-3">
@@ -643,33 +632,54 @@ export default function RegisterPage() {
                 </div>
               </div>
 
-              {/* Términos y condiciones */}
-              <div className="space-y-4">
-                <div className="flex items-start gap-3 p-4 bg-eco-primary/5 rounded-lg border border-eco-primary/10">
-                  <Checkbox
-                    id="terminos"
-                    checked={!!formData.terminos} // Ensure boolean
-                    onCheckedChange={(checked) => handleChange("terminos", checked as boolean)}
-                    className="mt-1"
-                    onBlur={() => handleBlur("terminos")} // Add onBlur for validation
-                  />
-                  <div className="flex-1">
-                    <Label htmlFor="terminos" className="text-sm text-eco-gray-dark cursor-pointer leading-relaxed">
-                      Acepto los{" "}
-                      <a href="#" className="text-eco-primary font-medium hover:underline">
-                        términos y condiciones
-                      </a>{" "}
-                      y la{" "}
-                      <a href="#" className="text-eco-primary font-medium hover:underline">
-                        política de privacidad
-                      </a>
-                    </Label>
-                    {errors.terminos && touchedFields.terminos && (
-                      <p className="text-xs text-eco-error flex items-center gap-1 mt-2">
-                        <AlertCircle className="w-3 h-3" />
-                        {errors.terminos}
-                      </p>
-                    )}
+              {/* Términos y condiciones - Rediseño de alta visibilidad */}
+              <div className="space-y-4 pt-2">
+                <div className={`relative p-8 rounded-3xl border-2 transition-all duration-500 overflow-hidden group ${errors.terminos && touchedFields.terminos
+                  ? "bg-eco-error/5 border-eco-error/30 shadow-eco-error/5"
+                  : "bg-gray-50/50 border-gray-100 hover:border-eco-primary/50 hover:bg-white hover:shadow-2xl hover:shadow-eco-primary/10"
+                  }`}>
+                  {/* Decorative element */}
+                  <div className="absolute -top-10 -right-10 w-32 h-32 bg-eco-primary/5 rounded-full blur-3xl group-hover:bg-eco-primary/10 transition-colors" />
+
+                  <div className="flex items-start gap-6 relative z-10">
+                    <div className="pt-1.5">
+                      <Checkbox
+                        id="terminos"
+                        checked={!!formData.terminos}
+                        onCheckedChange={(checked) => handleChange("terminos", checked as boolean)}
+                        onBlur={() => handleBlur("terminos")}
+                        className={`w-7 h-7 border-2 transition-all duration-300 scale-110 md:scale-125 ${errors.terminos && touchedFields.terminos
+                          ? "border-eco-error animate-shake"
+                          : "border-gray-300 data-[state=checked]:bg-linear-to-br data-[state=checked]:from-eco-primary data-[state=checked]:to-eco-primary-dark data-[state=checked]:border-transparent"
+                          }`}
+                      />
+                    </div>
+                    <div className="flex-1 space-y-2">
+                      <Label
+                        htmlFor="terminos"
+                        className="text-base md:text-lg text-gray-700 cursor-pointer leading-relaxed font-medium block select-none"
+                      >
+                        Confirmo que he leído y acepto los{" "}
+                        <Link href="/terms" target="_blank" className="text-eco-primary font-bold hover:text-eco-primary-dark underline decoration-2 decoration-eco-primary/20 hover:decoration-eco-primary transition-all underline-offset-4">
+                          términos de servicio
+                        </Link>{" "}
+                        y autorizo el tratamiento de mis datos bajo la{" "}
+                        <Link href="/privacy" target="_blank" className="text-eco-primary font-bold hover:text-eco-primary-dark underline decoration-2 decoration-eco-primary/20 hover:decoration-eco-primary transition-all underline-offset-4">
+                          política de privacidad
+                        </Link>
+                      </Label>
+
+                      {errors.terminos && touchedFields.terminos && (
+                        <motion.div
+                          initial={{ opacity: 0, x: -10 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          className="flex items-center gap-2 text-sm text-eco-error font-bold mt-3"
+                        >
+                          <AlertCircle className="w-5 h-5 fill-eco-error/10" />
+                          <span>Es necesario aceptar los términos para continuar</span>
+                        </motion.div>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -704,6 +714,33 @@ export default function RegisterPage() {
           </div>
         </div>
       </div>
+
+      {/* Modal de Éxito */}
+      {showSuccessModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm animate-in fade-in duration-300">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            className="bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl text-center space-y-6"
+          >
+            <div className="w-20 h-20 bg-eco-primary/10 rounded-full flex items-center justify-center mx-auto">
+              <CheckCircle2 className="w-10 h-10 text-eco-primary" />
+            </div>
+
+            <div className="space-y-2">
+              <h3 className="text-2xl font-bold text-gray-900">¡Registro Exitoso!</h3>
+              <p className="text-gray-600">Tu cuenta ha sido creada correctamente. Ahora puedes iniciar sesión para comenzar.</p>
+            </div>
+
+            <Button
+              onClick={() => router.push("/login")}
+              className="w-full h-12 bg-eco-primary hover:bg-eco-primary-dark text-white font-bold rounded-xl shadow-lg shadow-eco-primary/20 transition-all hover:scale-[1.02]"
+            >
+              Ir al Inicio de Sesión
+            </Button>
+          </motion.div>
+        </div>
+      )}
     </div>
   )
 }

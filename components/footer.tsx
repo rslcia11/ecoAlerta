@@ -1,4 +1,4 @@
-import { Leaf, Facebook, Twitter, Instagram, Mail, Phone, MapPin, Github } from "lucide-react"
+import { ShieldCheck, Facebook, Twitter, Instagram, Mail, Phone, MapPin, Github } from "lucide-react"
 import Link from "next/link"
 
 export function Footer() {
@@ -12,15 +12,15 @@ export function Footer() {
           {/* Brand & Mission */}
           <div className="col-span-1 md:col-span-2 space-y-8">
             <Link href="/" className="flex items-center gap-2.5">
-              <div className="w-10 h-10 bg-eco-primary rounded-xl flex items-center justify-center">
-                <Leaf className="w-5 h-5 text-white" />
+              <div className="w-10 h-10 bg-eco-primary rounded-xl flex items-center justify-center shadow-lg shadow-eco-primary/20">
+                <ShieldCheck className="w-5 h-5 text-white" />
               </div>
-              <span className="font-extrabold text-2xl tracking-tighter">
+              <span className="font-bold text-2xl tracking-tighter">
                 Eco<span className="text-eco-primary">Alerta</span>
               </span>
             </Link>
             <p className="text-gray-400 text-lg leading-relaxed max-w-sm">
-              Potenciando la vigilancia ciudadana para una Loja más verde, segura y consciente. El cambio empieza con tu reporte.
+              Potenciando la vigilancia ciudadana para una comunidad más segura, protegida y consciente. El cambio empieza con tu reporte.
             </p>
             <div className="flex gap-4">
               {[
@@ -59,7 +59,7 @@ export function Footer() {
             <div className="space-y-4 text-gray-400 text-sm font-medium">
               <div className="flex items-start gap-3">
                 <MapPin className="w-5 h-5 text-eco-primary shrink-0" />
-                <span>Loja, Ecuador <br />Av. Universitaria e Imbabura</span>
+                <span>Ecuador <br />Cobertura de Servicio Nacional</span>
               </div>
               <div className="flex items-center gap-3">
                 <Mail className="w-5 h-5 text-eco-primary shrink-0" />

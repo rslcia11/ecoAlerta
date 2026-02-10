@@ -16,7 +16,7 @@ import {
   MessageSquare,
   Search,
   User,
-  Leaf,
+  ShieldCheck,
   Flame,
   Trash2,
   TreePine,
@@ -408,8 +408,8 @@ export default function DashboardPage() {
             {/* Logo y búsqueda */}
             <div className="flex items-center gap-4 flex-1">
               <Link href="/dashboard" className="flex items-center gap-2">
-                <div className="w-10 h-10 bg-eco-primary rounded-full flex items-center justify-center">
-                  <Leaf className="w-6 h-6 text-white" />
+                <div className="w-10 h-10 bg-eco-primary rounded-xl flex items-center justify-center shadow-md shadow-eco-primary/10">
+                  <ShieldCheck className="w-6 h-6 text-white" />
                 </div>
               </Link>
 
@@ -477,12 +477,6 @@ export default function DashboardPage() {
                     <Link href="/dashboard/profile" className="cursor-pointer">
                       <User className="w-4 h-4 mr-2" />
                       Ver perfil
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link href="/dashboard/settings" className="cursor-pointer">
-                      <Settings className="w-4 h-4 mr-2" />
-                      Configuración
                     </Link>
                   </DropdownMenuItem>
                   {user?.rol === 'admin' && (

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { CheckCircle2, Leaf, Mail, MapPin, AlertCircle, ArrowRight, Home, LogIn } from "lucide-react"
+import { CheckCircle2, ShieldCheck, Mail, MapPin, AlertCircle, ArrowRight, Home, LogIn } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import confetti from "canvas-confetti"
 
@@ -17,7 +17,7 @@ export default function SuccessPage() {
     const duration = 3000
     const end = Date.now() + duration
 
-    const colors = ["#7bb273", "#4a9c8c", "#ffe3a3"]
+    const colors = ["#064e3b", "#065f46", "#059669"]
 
     const frame = () => {
       confetti({
@@ -46,9 +46,8 @@ export default function SuccessPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-eco-primary-lighter via-white to-eco-secondary/10 flex items-center justify-center p-4">
       <div
-        className={`max-w-2xl w-full transition-all duration-1000 transform ${
-          showContent ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"
-        }`}
+        className={`max-w-2xl w-full transition-all duration-1000 transform ${showContent ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"
+          }`}
       >
         {/* Card principal */}
         <div className="bg-white rounded-3xl shadow-2xl border-2 border-eco-primary/20 overflow-hidden">
@@ -76,8 +75,8 @@ export default function SuccessPage() {
             {/* Mensaje de bienvenida */}
             <div className="bg-eco-success/10 border-2 border-eco-success/20 rounded-xl p-6 animate-fade-in-up">
               <div className="flex items-start gap-4">
-                <div className="w-12 h-12 bg-eco-success/20 rounded-full flex items-center justify-center flex-shrink-0">
-                  <Leaf className="w-6 h-6 text-eco-success" />
+                <div className="w-12 h-12 bg-eco-primary/20 rounded-xl flex items-center justify-center flex-shrink-0">
+                  <ShieldCheck className="w-6 h-6 text-eco-primary" />
                 </div>
                 <div>
                   <h2 className="font-bold text-lg text-eco-gray-dark mb-2">¡Gracias por unirte!</h2>
@@ -188,8 +187,8 @@ export default function SuccessPage() {
         {/* Footer con estadística motivacional */}
         <div className="mt-6 text-center animate-fade-in delay-500">
           <p className="text-sm text-eco-gray-medium">
-            Ya somos <span className="text-eco-primary font-bold text-lg">1,247</span> ciudadanos cuidando el medio
-            ambiente en Loja
+            Ya somos <span className="text-eco-primary font-bold text-lg">1,247</span> ciudadanos vigilando activamente
+            nuestro entorno ambiental
           </p>
         </div>
       </div>

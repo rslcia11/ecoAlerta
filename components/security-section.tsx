@@ -8,22 +8,22 @@ export function SecuritySection() {
     {
       icon: Shield,
       title: "Datos Protegidos",
-      description: "Encriptación de grado militar en todos tus reportes y datos personales.",
+
     },
     {
       icon: Lock,
       title: "Acceso Seguro",
-      description: "Infraestructura robusta protegida por los estándares más altos de la industria.",
+
     },
     {
       icon: Eye,
       title: "Privacidad Total",
-      description: "Tú decides qué información quieres compartir públicamente.",
+
     },
     {
       icon: Users,
       title: "Confianza Ciudadana",
-      description: "Sistema de verificación heredado de la comunidad para reportes auténticos.",
+
     },
   ]
 

@@ -1,7 +1,7 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { ArrowRight, MapPin, ShieldCheck, Leaf, Sparkles, Globe } from "lucide-react"
+import { ArrowRight, MapPin, ShieldCheck, Activity, Globe } from "lucide-react"
 import { motion } from "framer-motion"
 import Link from "next/link"
 
@@ -48,8 +48,8 @@ export function Hero() {
               </div>
 
               <h1 className="text-5xl md:text-7xl font-extrabold leading-[1.1] text-gray-900 tracking-tight">
-                Protege <span className="text-transparent bg-clip-text bg-linear-to-r from-emerald-800 to-teal-900">Loja</span>, <br />
-                un reporte a la vez.
+                Eco <span className="text-transparent bg-clip-text bg-linear-to-r from-emerald-800 to-teal-900">Alerta</span>, <br />
+                Reporte Ciudadano.
               </h1>
 
               <p className="text-lg md:text-xl text-gray-600 leading-relaxed max-w-2xl mx-auto lg:mx-0">
@@ -73,7 +73,7 @@ export function Hero() {
                   size="lg"
                   className="border-gray-200 text-gray-700 hover:bg-gray-50 px-8 h-14 rounded-2xl text-lg font-bold backdrop-blur-sm w-full sm:w-auto"
                 >
-                  Ver el mapa
+                  Ver reportes
                 </Button>
               </Link>
             </motion.div>
@@ -91,14 +91,14 @@ export function Hero() {
                   <Globe className="w-5 h-5 text-blue-600" />
                 </div>
                 <p className="text-xs font-bold text-gray-900">Geolocalizado</p>
-                <p className="text-[10px] text-gray-500">Precisión en Loja</p>
+                <p className="text-[10px] text-gray-500">Precisión en tu reporte</p>
               </div>
               <div className="flex flex-col items-center lg:items-start p-4 rounded-2xl bg-gray-50/50 border border-gray-100 backdrop-blur-sm">
                 <div className="p-2 bg-emerald-500/10 rounded-lg mb-2">
-                  <Leaf className="w-5 h-5 text-emerald-600" />
+                  <Activity className="w-5 h-5 text-emerald-600" />
                 </div>
-                <p className="text-xs font-bold text-gray-900">Acción Verde</p>
-                <p className="text-[10px] text-gray-500">Impacto Directo</p>
+                <p className="text-xs font-bold text-gray-900">Acción Proactiva</p>
+                <p className="text-[10px] text-gray-500">Impacto Geoubicado</p>
               </div>
             </motion.div>
           </motion.div>
@@ -125,8 +125,8 @@ export function Hero() {
                 <div className="space-y-4">
                   {[1, 2, 3].map((i) => (
                     <div key={i} className="bg-white/80 p-4 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-4 animate-in fade-in slide-in-from-bottom-2 duration-500 fill-mode-both" style={{ animationDelay: `${i * 150}ms` }}>
-                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${i === 1 ? 'bg-orange-100 text-orange-600' : i === 2 ? 'bg-blue-100 text-blue-600' : 'bg-green-100 text-green-600'}`}>
-                        {i === 1 ? <MapPin className="w-6 h-6" /> : i === 2 ? <ShieldCheck className="w-6 h-6" /> : <Leaf className="w-6 h-6" />}
+                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${i === 1 ? 'bg-orange-100 text-orange-600' : i === 2 ? 'bg-blue-100 text-blue-600' : 'bg-emerald-100 text-emerald-600'}`}>
+                        {i === 1 ? <MapPin className="w-6 h-6" /> : i === 2 ? <ShieldCheck className="w-6 h-6" /> : <Activity className="w-6 h-6" />}
                       </div>
                       <div className="flex-1 space-y-1">
                         <div className="h-3 w-2/3 bg-gray-200 rounded-full" />
