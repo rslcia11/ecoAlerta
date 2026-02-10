@@ -49,6 +49,7 @@ interface Report {
     usuario_telefono?: string
     usuario_correo?: string
     imagen?: string
+    ubicacion?: string
 }
 
 // Función para formatear tiempo relativo
@@ -383,16 +384,15 @@ export default function AdminDashboard() {
                             {/* Detalles Técnicos */}
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-1">
-                                    <h4 className="text-xs font-semibold text-gray-500 uppercase">Ubicación (Coordenadas)</h4>
-                                    <div className="bg-gray-50 p-2 rounded border font-mono text-xs text-gray-600">
-                                        Lat: {selectedReport.latitud}<br />
-                                        Lng: {selectedReport.longitud}
+                                    <h4 className="text-xs font-semibold text-gray-500 uppercase">Ubicación</h4>
+                                    <div className="bg-gray-50 p-2 rounded border text-sm font-medium text-gray-700">
+                                        {selectedReport.ubicacion || `Lat: ${selectedReport.latitud}, Lng: ${selectedReport.longitud}`}
                                     </div>
                                 </div>
                                 <div className="space-y-1">
                                     <h4 className="text-xs font-semibold text-gray-500 uppercase">Categoría</h4>
                                     <div className="bg-gray-50 p-2 rounded border text-sm font-medium text-gray-700">
-                                        ID: {selectedReport.id_categoria}
+                                        {selectedReport.categoria_nombre || "Sin categoría"}
                                     </div>
                                 </div>
                             </div>

@@ -756,7 +756,7 @@ export default function DashboardPage() {
                         }}
                         className={`text-xs font-medium px-2 py-1 rounded-full transition-colors ${smartFiltersActive ? 'bg-eco-primary/10 text-eco-primary' : 'bg-gray-100 text-gray-500'}`}
                       >
-                        {smartFiltersActive ? "✨ Inteligente activado" : "Activar Feed Inteligente"}
+                        {smartFiltersActive ? "" : "Activar Feed Inteligente"}
                       </button>
                     )}
                   </div>
