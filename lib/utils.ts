@@ -23,3 +23,24 @@ export function formatRelativeTime(dateString: string) {
     year: "numeric"
   })
 }
+
+export function cleanLocationName(address: string): string {
+  if (!address) return "";
+
+  // Split by comma
+  const parts = address.split(",").map((part) => part.trim());
+
+  // Filter out parts
+  const filteredParts = parts.filter((part) => {
+    // Remove "Ecuador" (case insensitive)
+    const isCountry = part.toLowerCase() === "ecuador";
+
+    // Remove postal codes (usually 6 digits in Ecuador, checking for 5-6 digits to be safe)
+    // Also ensuring it's purely numeric
+    const isPostalCode = /^\d{5,6}$/.test(part);
+
+    return !isCountry && !isPostalCode;
+  });
+
+  return filteredParts.join(", ");
+}

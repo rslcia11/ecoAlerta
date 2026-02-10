@@ -78,6 +78,8 @@ const coloresEstado: Record<string, string> = {
 }
 
 // Función para formatear tiempo relativo
+import { cleanLocationName } from "@/lib/utils"
+
 function formatRelativeTime(dateString: string): string {
     if (!dateString) return 'Sin fecha';
     const date = new Date(dateString);
@@ -108,7 +110,7 @@ export default function MyReportsPage() {
                     id: r.id_reporte,
                     descripcion: r.descripcion,
                     categoria: CATEGORY_MAP[r.id_categoria] || "general",
-                    ubicacion: `Lat: ${r.latitud}, Lng: ${r.longitud}`,
+                    ubicacion: cleanLocationName(r.ubicacion) || `Lat: ${r.latitud}, Lng: ${r.longitud}`,
                     fecha: formatRelativeTime(r.creado_en),
                     estado: r.estado,
                     imagen: r.imagen ? `${(process.env.NEXT_PUBLIC_API_URL || '').replace('/api', '')}${r.imagen}` : undefined,

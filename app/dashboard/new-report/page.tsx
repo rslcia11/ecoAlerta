@@ -24,13 +24,16 @@ export default function NewReportPage() {
     const { user } = useAuth()
     const [loading, setLoading] = useState(false)
     const [categorias, setCategorias] = useState<Categoria[]>([])
+    const [provincias, setProvincias] = useState<any[]>([])
 
     const [formData, setFormData] = useState({
         descripcion: "",
-        id_categoria: "",
         latitud: "",
         longitud: "",
         ubicacion: "",
+        id_categoria: "",
+        id_provincia: "",
+        id_ciudad: ""
     })
 
     // Construct default search query from user profile
@@ -42,30 +45,19 @@ export default function NewReportPage() {
     const [previewUrl, setPreviewUrl] = useState<string | null>(null)
 
     useEffect(() => {
-        // Fetch categories
-        const fetchCats = async () => {
+        const fetchCatalogs = async () => {
             try {
-                const res = await api.get('/catalogos/categorias');
-                setCategorias(res.data);
+                const [catsRes, provsRes] = await Promise.all([
+                    api.get('/catalogos/categorias'),
+                    api.get('/catalogos/provincias')
+                ]);
+                setCategorias(catsRes.data);
+                setProvincias(provsRes.data);
             } catch (e) {
                 console.error(e)
             }
         }
-        fetchCats();
-
-        // Get current location
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(
-                (pos) => {
-                    setFormData(prev => ({
-                        ...prev,
-                        latitud: pos.coords.latitude.toString(),
-                        longitud: pos.coords.longitude.toString()
-                    }))
-                },
-                (err) => console.error("Error obteniendo ubicación", err)
-            )
-        }
+        fetchCatalogs();
     }, [])
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -86,6 +78,8 @@ export default function NewReportPage() {
             data.append('latitud', formData.latitud);
             data.append('longitud', formData.longitud);
             data.append('ubicacion', formData.ubicacion);
+            if (formData.id_provincia) data.append('id_provincia', formData.id_provincia);
+            if (formData.id_ciudad) data.append('id_ciudad', formData.id_ciudad);
 
             if (files) {
                 for (let i = 0; i < files.length; i++) {
@@ -159,12 +153,39 @@ export default function NewReportPage() {
                     <div className="space-y-2">
                         <Label>Ubicación del incidente</Label>
                         <LocationPicker
-                            onLocationSelect={(lat, lng, address) => {
+                            onLocationSelect={async (lat, lng, address, provinciaName, ciudadName) => {
+                                let provinciaId = "";
+                                let ciudadId = "";
+
+                                // 1. Map Province
+                                if (provinciaName && provincias.length > 0) {
+                                    const normalize = (str: string) => str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                                    const target = normalize(provinciaName);
+                                    const found = provincias.find((p: any) => normalize(p.nombre).includes(target) || target.includes(normalize(p.nombre)));
+                                    if (found) provinciaId = found.id_provincia.toString();
+                                }
+
+                                // 2. Map City if we have province
+                                if (provinciaId && ciudadName) {
+                                    try {
+                                        const res = await api.get(`/catalogos/ciudades?id_provincia=${provinciaId}`);
+                                        const cities = res.data;
+                                        const normalize = (str: string) => str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                                        const target = normalize(ciudadName);
+                                        const found = cities.find((c: any) => normalize(c.nombre).includes(target) || target.includes(normalize(c.nombre)));
+                                        if (found) ciudadId = found.id_ciudad.toString();
+                                    } catch (e) {
+                                        console.error("Error mapping city:", e);
+                                    }
+                                }
+
                                 setFormData(prev => ({
                                     ...prev,
                                     latitud: lat.toString(),
                                     longitud: lng.toString(),
-                                    ubicacion: address || ""
+                                    ubicacion: address || "",
+                                    id_provincia: provinciaId,
+                                    id_ciudad: ciudadId
                                 }))
                             }}
                             defaultSearchQuery={userLocationQuery}

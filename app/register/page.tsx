@@ -24,6 +24,26 @@ interface Ciudad {
   nombre: string;
 }
 
+// Utilidad para validar cédula ecuatoriana (Módulo 10)
+const isCedulaValida = (cedula: string) => {
+  if (!cedula || cedula.length !== 10 || !/^\d+$/.test(cedula)) return false;
+  const provincia = parseInt(cedula.substring(0, 2), 10);
+  if (provincia < 0 || provincia > 24) return false;
+  const tercerDigito = parseInt(cedula.substring(2, 3), 10);
+  if (tercerDigito >= 6) return false;
+  const coeficientes = [2, 1, 2, 1, 2, 1, 2, 1, 2];
+  const digitoVerificadorOriginal = parseInt(cedula.substring(9, 10), 10);
+  let suma = 0;
+  for (let i = 0; i < 9; i++) {
+    let valor = parseInt(cedula.substring(i, i + 1), 10) * coeficientes[i];
+    if (valor > 9) valor -= 9;
+    suma += valor;
+  }
+  const residuo = suma % 10;
+  const digitoVerificadorCalculado = residuo === 0 ? 0 : 10 - residuo;
+  return digitoVerificadorCalculado === digitoVerificadorOriginal;
+};
+
 export default function RegisterPage() {
   const router = useRouter()
   const { login } = useAuth()
@@ -100,7 +120,7 @@ export default function RegisterPage() {
       case "correo":
         if (!value.toString().trim()) {
           error = "El correo es requerido"
-        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.toString())) {
+        } else if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(value.toString())) {
           error = "Correo electrónico inválido"
         }
         break
@@ -118,8 +138,8 @@ export default function RegisterPage() {
       case "cedula":
         if (!value.toString().trim()) {
           error = "La cédula es requerida"
-        } else if (!/^\d{10}$/.test(value.toString())) {
-          error = "Debe tener 10 dígitos"
+        } else if (!isCedulaValida(value.toString())) {
+          error = "Cédula inválida (Módulo 10)"
         }
         break
 
@@ -243,7 +263,7 @@ export default function RegisterPage() {
 
   return (
     // Diseño minimalista con título centrado
-    <div className="min-h-screen bg-gradient-to-br from-white via-eco-primary/5 to-eco-secondary/10">
+    <div className="min-h-screen bg-linear-to-br from-white via-eco-primary/5 to-eco-secondary/10">
       <div className="container mx-auto px-4 pt-6">
         <Link
           href="/"
@@ -275,7 +295,7 @@ export default function RegisterPage() {
               </div>
               <div className="h-2 bg-eco-gray-light rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-gradient-to-r from-eco-primary to-eco-secondary transition-all duration-500 ease-out"
+                  className="h-full bg-linear-to-r from-eco-primary to-eco-secondary transition-all duration-500 ease-out"
                   style={{ width: `${progress}%` }}
                 />
               </div>
@@ -286,7 +306,7 @@ export default function RegisterPage() {
               {/* Error general */}
               {errors.submit && (
                 <div className="bg-eco-error/10 border border-eco-error/20 rounded-lg p-4 flex items-start gap-3">
-                  <AlertCircle className="w-5 h-5 text-eco-error flex-shrink-0 mt-0.5" />
+                  <AlertCircle className="w-5 h-5 text-eco-error shrink-0 mt-0.5" />
                   <p className="text-sm text-eco-error font-medium">{errors.submit}</p>
                 </div>
               )}

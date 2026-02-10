@@ -5,7 +5,7 @@ import { useAuth } from "@/app/context/AuthContext"
 import api from "@/app/services/api"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { UserAvatar } from "@/components/ui/UserAvatar"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Loader2, Trash2, Send, MessageSquare } from "lucide-react"
@@ -112,12 +112,12 @@ export function CommentsModal({ isOpen, onClose, reportId, onCommentAdded }: Com
                         <div className="space-y-4 py-4">
                             {comments.map((comment) => (
                                 <div key={comment.id_comentario} className="flex gap-3 text-sm">
-                                    <Avatar className="w-8 h-8">
-                                        <AvatarImage src={comment.avatar} />
-                                        <AvatarFallback className="bg-eco-primary/10 text-eco-primary text-xs">
-                                            {comment.nombre ? comment.nombre[0] : "U"}
-                                        </AvatarFallback>
-                                    </Avatar>
+                                    <UserAvatar
+                                        nombre={comment.nombre}
+                                        apellido={comment.apellido}
+                                        avatarUrl={comment.avatar}
+                                        className="w-8 h-8"
+                                    />
                                     <div className="flex-1 space-y-1">
                                         <div className="flex items-center justify-between">
                                             <span className="font-semibold text-gray-900">

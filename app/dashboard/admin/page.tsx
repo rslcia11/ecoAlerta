@@ -24,6 +24,7 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog"
 import { ArrowLeft, Check, X, Eye, Loader2, User, Filter } from "lucide-react"
+import { UserAvatar } from "@/components/ui/UserAvatar"
 import {
     Select,
     SelectContent,
@@ -80,6 +81,8 @@ export default function AdminDashboard() {
     const [filterCategoria, setFilterCategoria] = useState<string>("all")
     const [filterEstado, setFilterEstado] = useState<string>("all")
     const [filterFecha, setFilterFecha] = useState<string>("")
+    const [filterProvincia, setFilterProvincia] = useState<string>("all")
+    const [provincias, setProvincias] = useState<any[]>([])
 
     useEffect(() => {
         if (!authLoading) {
@@ -88,13 +91,29 @@ export default function AdminDashboard() {
                 // Por ahora lo dejamos abierto para pruebas si el rol no coincide exacto
             }
             fetchPendingReports()
+            fetchProvincias()
         }
-    }, [user, authLoading])
+    }, [user, authLoading, filterProvincia]) // Add filterProvincia dependency
+
+    const fetchProvincias = async () => {
+        try {
+            const res = await api.get('/catalogos/provincias');
+            setProvincias(res.data);
+        } catch (e) {
+            console.error(e)
+        }
+    }
 
     const fetchPendingReports = async () => {
         try {
             setLoading(true)
-            const res = await api.get('/reportes/admin')
+            let url = '/reportes/admin';
+            const params = [];
+            if (filterProvincia !== 'all') params.push(`id_provincia=${filterProvincia}`);
+
+            if (params.length > 0) url += `?${params.join('&')}`;
+
+            const res = await api.get(url)
             setReports(res.data.data)
             setFilteredReports(res.data.data)
         } catch (error) {
@@ -204,6 +223,19 @@ export default function AdminDashboard() {
                                         ))}
                                     </SelectContent>
                                 </Select>
+                                <Select value={filterProvincia} onValueChange={setFilterProvincia}>
+                                    <SelectTrigger className="w-40">
+                                        <SelectValue placeholder="Provincia" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">Todas</SelectItem>
+                                        {provincias.map(p => (
+                                            <SelectItem key={p.id_provincia} value={p.id_provincia.toString()}>
+                                                {p.nombre}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
                             </div>
                         </div>
                     </CardHeader>
@@ -287,8 +319,12 @@ export default function AdminDashboard() {
                             {/* Información del Usuario */}
                             <div className="flex flex-col gap-3 p-4 bg-gray-50 rounded-lg border border-gray-100">
                                 <div className="flex items-center gap-3 mb-2">
-                                    <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center border shadow-sm">
-                                        <User className="w-6 h-6 text-gray-500" />
+                                    <div className="w-10 h-10 flex items-center justify-center">
+                                        <UserAvatar
+                                            nombre={selectedReport.usuario_nombre}
+                                            apellido={selectedReport.usuario_apellido}
+                                            className="w-10 h-10"
+                                        />
                                     </div>
                                     <div>
                                         <p className="font-bold text-gray-900 text-lg">
@@ -382,6 +418,6 @@ export default function AdminDashboard() {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
-        </div>
+        </div >
     )
 }

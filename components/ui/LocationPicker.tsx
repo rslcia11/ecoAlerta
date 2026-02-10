@@ -33,11 +33,13 @@ const fixLeafletIcons = async () => {
     L.Marker.prototype.options.icon = DefaultIcon
 }
 
+import { formatRelativeTime, cleanLocationName } from "@/lib/utils"
+
 interface LocationPickerProps {
     initialLat?: number
     initialLng?: number
     defaultSearchQuery?: string // e.g. "Loja, Ecuador"
-    onLocationSelect: (lat: number, lng: number, address?: string) => void
+    onLocationSelect: (lat: number, lng: number, address?: string, provincia?: string, ciudad?: string) => void
 }
 
 const LocationPickerClient = ({
@@ -69,8 +71,8 @@ const LocationPickerClient = ({
                 const lat = e.latlng.lat;
                 const lng = e.latlng.lng;
                 setPosition([lat, lng])
-                const addr = await reverseGeocode(lat, lng)
-                onLocationSelect(lat, lng, addr)
+                const { address, provincia, ciudad } = await reverseGeocode(lat, lng)
+                onLocationSelect(lat, lng, address, provincia, ciudad)
             },
         })
         return null
@@ -87,33 +89,84 @@ const LocationPickerClient = ({
         return null
     }
 
-    // Initial geocoding if defaultSearchQuery is provided and no initial coords
+    const [isLocating, setIsLocating] = useState(true)
+
+    // Initial positioning logic
     useEffect(() => {
-        if (!initialLat && !initialLng && defaultSearchQuery) {
-            searchLocation(defaultSearchQuery);
+        // If initial coordinates are provided, just use them and stop loading
+        if (initialLat && initialLng) {
+            setIsLocating(false);
+            return;
         }
-    }, [defaultSearchQuery]); // Run once if query provided
+
+        const initializeLocation = async () => {
+            setIsLocating(true);
+
+            // 1. Try Geolocation API
+            if ("geolocation" in navigator) {
+                try {
+                    const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+                        navigator.geolocation.getCurrentPosition(resolve, reject, {
+                            enableHighAccuracy: true,
+                            timeout: 5000,
+                            maximumAge: 0
+                        });
+                    });
+
+                    const lat = position.coords.latitude;
+                    const lng = position.coords.longitude;
+
+                    setPosition([lat, lng]);
+                    setPosition([lat, lng]);
+                    const { address, provincia, ciudad } = await reverseGeocode(lat, lng);
+                    onLocationSelect(lat, lng, address, provincia, ciudad);
+                    setIsLocating(false);
+                    return; // Successfully located
+                } catch (error) {
+                    console.log("Geolocation failed or denied, falling back to default query", error);
+                }
+            }
+
+            // 2. Fallback to defaultSearchQuery (User's city/province)
+            if (defaultSearchQuery) {
+                await searchLocation(defaultSearchQuery);
+            } else {
+                // 3. Ultimate fallback (Ecuador center)
+                // Already handled by default state of 'center' variable if position is null
+                setIsLocating(false);
+            }
+        };
+
+        initializeLocation();
+    }, [initialLat, initialLng, defaultSearchQuery]); // Dependencies
 
     const searchLocation = async (query: string) => {
         if (!query) return
         setSearching(true)
         try {
             const response = await fetch(
-                `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`
+                `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1&addressdetails=1`
             )
             const data = await response.json()
             if (data && data.length > 0) {
                 const lat = parseFloat(data[0].lat)
                 const lon = parseFloat(data[0].lon)
                 const addr = data[0].display_name
+
                 setPosition([lat, lon])
-                setAddress(addr)
-                onLocationSelect(lat, lon, addr)
+                // Only trigger callback if we found a location
+                const cleanAddr = cleanLocationName(addr);
+                const addressDetails = data[0].address || {};
+                const provincia = addressDetails.state || addressDetails.province || addressDetails.region;
+                const ciudad = addressDetails.city || addressDetails.town || addressDetails.village || addressDetails.municipality;
+                setAddress(cleanAddr)
+                onLocationSelect(lat, lon, addr, provincia, ciudad) // Send full address to parent
             }
         } catch (error) {
             console.error("Error geocoding:", error)
         } finally {
             setSearching(false)
+            setIsLocating(false)
         }
     }
 
@@ -124,11 +177,14 @@ const LocationPickerClient = ({
             )
             const data = await response.json()
             const addr = data.display_name || `Lat: ${lat.toFixed(4)}, Lng: ${lng.toFixed(4)}`
-            setAddress(addr)
-            return addr
+            const addressDetails = data.address || {};
+            const provincia = addressDetails.state || addressDetails.province || addressDetails.region;
+            const ciudad = addressDetails.city || addressDetails.town || addressDetails.village || addressDetails.municipality;
+            setAddress(cleanLocationName(addr))
+            return { address: addr, provincia, ciudad };
         } catch (error) {
             console.error("Error reverse geocoding:", error)
-            return `Lat: ${lat.toFixed(4)}, Lng: ${lng.toFixed(4)}`
+            return { address: `Lat: ${lat.toFixed(4)}, Lng: ${lng.toFixed(4)}`, provincia: undefined, ciudad: undefined };
         }
     }
 
@@ -146,8 +202,8 @@ const LocationPickerClient = ({
                     if (marker != null) {
                         const { lat, lng } = marker.getLatLng()
                         setPosition([lat, lng])
-                        const addr = await reverseGeocode(lat, lng)
-                        onLocationSelect(lat, lng, addr)
+                        const { address, provincia, ciudad } = await reverseGeocode(lat, lng)
+                        onLocationSelect(lat, lng, address, provincia, ciudad)
                     }
                 },
             }),

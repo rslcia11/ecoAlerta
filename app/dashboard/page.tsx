@@ -32,7 +32,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -42,8 +42,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { UserAvatar } from "@/components/ui/UserAvatar"
 import { CommentsModal } from "@/components/dashboard/CommentsModal"
-import { formatRelativeTime } from "@/lib/utils"
+import { formatRelativeTime, cleanLocationName } from "@/lib/utils"
 
 // Tipos para las alertas
 interface Alert {
@@ -163,6 +164,11 @@ export default function DashboardPage() {
   const [alertas, setAlertas] = useState<Alert[]>([])
   const [loading, setLoading] = useState(true)
   const [filtroCategoria, setFiltroCategoria] = useState<string>("todas")
+  const [filtroProvincia, setFiltroProvincia] = useState<string>("todas")
+  const [filtroCiudad, setFiltroCiudad] = useState<string>("todas")
+  const [smartFiltersActive, setSmartFiltersActive] = useState(true)
+  const [smartStatus, setSmartStatus] = useState<string>("")
+  const [provincias, setProvincias] = useState<any[]>([])
   const [busqueda, setBusqueda] = useState("")
   const [userStats, setUserStats] = useState({ totalReportes: 0, activos: 0 })
   const [activeTab, setActiveTab] = useState<"feed" | "tendencias" | "estadisticas">("feed")
@@ -173,35 +179,99 @@ export default function DashboardPage() {
   const [reportesHoy, setReportesHoy] = useState(0)
 
   useEffect(() => {
-    const fetchReports = async () => {
+    const fetchProvincias = async () => {
       try {
-        const res = await api.get('/reportes/publicos');
-        // Map backend data to frontend interface
-        const mappedAlerts = res.data.data.map((r: any) => ({
-          id: r.id_reporte,
-          titulo: r.descripcion ? r.descripcion.substring(0, 50) + "..." : "Reporte sin título",
-          descripcion: r.descripcion,
-          categoria: CATEGORY_MAP[r.id_categoria] || "general",
-          ubicacion: r.ubicacion || `Lat: ${r.latitud}, Lng: ${r.longitud}`,
-          fecha: formatRelativeTime(r.creado_en),
-          autor: `${r.autor_nombre || 'Anónimo'} ${r.autor_apellido || ''}`,
-          imagen: r.imagen ? `${(process.env.NEXT_PUBLIC_API_URL || '').replace('/api', '')}${r.imagen}` : undefined,
-          likes: r.likes || 0,
-          comentarios: r.comentarios || 0,
-          vistas: r.vistas || 0,
-          liked_by_me: !!r.liked_by_me,
-          estado: (r.estado === 'Aprobado') ? 'activo' as any
-            : (r.estado === 'Pendiente' || r.estado === 'por aprobar') ? 'en_proceso' as any
-              : (r.estado === 'Rechazado') ? 'rechazado' as any
-                : 'resuelto' as any, // Fallback for others
-          id_usuario: r.id_usr
-        }));
-        setAlertas(mappedAlerts);
+        const res = await api.get('/catalogos/provincias');
+        setProvincias(res.data);
+      } catch (e) {
+        console.error(e)
+      }
+    }
+    fetchProvincias();
+  }, [])
+
+  useEffect(() => {
+    const fetchReports = async () => {
+      setLoading(true)
+      try {
+        let cityReports = [];
+        let provinceReports = [];
+        let allReports = [];
+
+        // Determine current filter targets
+        let targetProvincia = filtroProvincia;
+        let targetCiudad = filtroCiudad;
+
+        // If smart filters are on and no manual filter is set, use user location
+        if (smartFiltersActive && user && filtroProvincia === "todas" && filtroCiudad === "todas") {
+          // 1. Try City
+          if (user.id_ciudad) {
+            const resCity = await api.get(`/reportes/publicos?id_ciudad=${user.id_ciudad}`);
+            cityReports = resCity.data.data;
+            if (cityReports.length > 0) {
+              setSmartStatus(`Mostrando reportes de tu ciudad: ${user.ciudad_nombre || user.ciudad || 'Local'}`);
+              setAlertas(mapReports(cityReports));
+              setLoading(false);
+              return;
+            }
+          }
+
+          // 2. Try Province
+          if (user.id_provincia) {
+            const resProv = await api.get(`/reportes/publicos?id_provincia=${user.id_provincia}`);
+            provinceReports = resProv.data.data;
+            if (provinceReports.length > 0) {
+              setSmartStatus(`No hay reportes en tu ciudad. Mostrando tu provincia: ${user.provincia_nombre || user.provincia || 'Local'}`);
+              setAlertas(mapReports(provinceReports));
+              setLoading(false);
+              return;
+            }
+          }
+
+          // 3. Fallback to All
+          const resAll = await api.get('/reportes/publicos');
+          allReports = resAll.data.data;
+          setSmartStatus("No hay reportes cercanos. Mostrando todos los reportes públicos.");
+          setAlertas(mapReports(allReports));
+        } else {
+          // Manual filtering or Guest mode
+          setSmartStatus("");
+          let url = '/reportes/publicos';
+          const params = new URLSearchParams();
+          if (filtroProvincia !== "todas") params.append('id_provincia', filtroProvincia);
+          if (filtroCiudad !== "todas") params.append('id_ciudad', filtroCiudad);
+
+          const queryStr = params.toString();
+          const res = await api.get(url + (queryStr ? `?${queryStr}` : ''));
+          setAlertas(mapReports(res.data.data));
+        }
       } catch (error) {
         console.error("Error fetching reports:", error);
       } finally {
         setLoading(false);
       }
+    };
+
+    const mapReports = (data: any[]) => {
+      return data.map((r: any) => ({
+        id: r.id_reporte,
+        titulo: r.descripcion ? r.descripcion.substring(0, 50) + "..." : "Reporte sin título",
+        descripcion: r.descripcion,
+        categoria: CATEGORY_MAP[r.id_categoria] || "general",
+        ubicacion: cleanLocationName(r.ubicacion) || `Lat: ${r.latitud}, Lng: ${r.longitud}`,
+        fecha: formatRelativeTime(r.creado_en),
+        autor: `${r.autor_nombre || 'Anónimo'} ${r.autor_apellido || ''}`,
+        imagen: r.imagen ? `${(process.env.NEXT_PUBLIC_API_URL || '').replace('/api', '')}${r.imagen}` : undefined,
+        likes: r.likes || 0,
+        comentarios: r.comentarios || 0,
+        vistas: r.vistas || 0,
+        liked_by_me: !!r.liked_by_me,
+        estado: (r.estado === 'Aprobado') ? 'activo' as any
+          : (r.estado === 'Pendiente' || r.estado === 'por aprobar') ? 'en_proceso' as any
+            : (r.estado === 'Rechazado') ? 'rechazado' as any
+              : 'resuelto' as any,
+        id_usuario: r.id_usr
+      }));
     };
 
     const fetchUserStats = async () => {
@@ -229,7 +299,7 @@ export default function DashboardPage() {
     fetchReports();
     if (user) fetchUserStats();
     fetchTodayCount();
-  }, [user]);
+  }, [user, filtroProvincia, filtroCiudad, smartFiltersActive]);
 
   // Fetch trending when tab changes
   useEffect(() => {
@@ -337,7 +407,7 @@ export default function DashboardPage() {
           <div className="flex items-center justify-between">
             {/* Logo y búsqueda */}
             <div className="flex items-center gap-4 flex-1">
-              <Link href="/" className="flex items-center gap-2">
+              <Link href="/dashboard" className="flex items-center gap-2">
                 <div className="w-10 h-10 bg-eco-primary rounded-full flex items-center justify-center">
                   <Leaf className="w-6 h-6 text-white" />
                 </div>
@@ -379,23 +449,23 @@ export default function DashboardPage() {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button className="hover:bg-gray-100 rounded-full p-1 transition-colors">
-                    <Avatar className="w-10 h-10 border-2 border-eco-primary">
-                      <AvatarImage src={user?.avatar || "/placeholder.svg"} />
-                      <AvatarFallback className="bg-eco-primary text-white font-semibold">
-                        {user?.nombre ? user.nombre[0] : "U"}
-                      </AvatarFallback>
-                    </Avatar>
+                    <UserAvatar
+                      nombre={user?.nombre}
+                      apellido={user?.apellido}
+                      avatarUrl={user?.avatar}
+                      className="w-10 h-10 border-2 border-eco-primary"
+                    />
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-64">
                   <DropdownMenuLabel className="pb-0">
                     <div className="flex items-center gap-3 py-2">
-                      <Avatar className="w-12 h-12">
-                        <AvatarImage src={user?.avatar || "/placeholder.svg"} />
-                        <AvatarFallback className="bg-eco-primary text-white">
-                          {user?.nombre ? user.nombre[0] : "U"}
-                        </AvatarFallback>
-                      </Avatar>
+                      <UserAvatar
+                        nombre={user?.nombre}
+                        apellido={user?.apellido}
+                        avatarUrl={user?.avatar}
+                        className="w-12 h-12"
+                      />
                       <div>
                         <p className="font-semibold text-gray-900">{user?.nombre || "Usuario"} {user?.apellido || ""}</p>
                         <p className="text-xs text-gray-500">{user?.rol || "Invitado"}</p>
@@ -448,12 +518,12 @@ export default function DashboardPage() {
                 href="/dashboard/profile"
                 className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-100 transition-colors"
               >
-                <Avatar className="w-9 h-9">
-                  <AvatarImage src={user?.avatar || "/placeholder.svg"} />
-                  <AvatarFallback className="bg-eco-primary text-white text-sm">
-                    {user?.nombre ? user.nombre[0] : "U"}
-                  </AvatarFallback>
-                </Avatar>
+                <UserAvatar
+                  nombre={user?.nombre}
+                  apellido={user?.apellido}
+                  avatarUrl={user?.avatar}
+                  className="w-9 h-9"
+                />
                 <span className="font-semibold text-gray-900">{user?.nombre || "Usuario"}</span>
               </Link>
 
@@ -655,12 +725,12 @@ export default function DashboardPage() {
               <>
                 <div className="bg-white rounded-lg shadow p-4">
                   <div className="flex items-center gap-3 mb-3">
-                    <Avatar className="w-10 h-10">
-                      <AvatarImage src={user?.avatar || "/placeholder.svg"} />
-                      <AvatarFallback className="bg-eco-primary text-white">
-                        {user?.nombre ? user.nombre[0] : "U"}
-                      </AvatarFallback>
-                    </Avatar>
+                    <UserAvatar
+                      nombre={user?.nombre}
+                      apellido={user?.apellido}
+                      avatarUrl={user?.avatar}
+                      className="w-10 h-10"
+                    />
                     <Button
                       asChild
                       variant="outline"
@@ -678,11 +748,29 @@ export default function DashboardPage() {
                 </div>
 
                 {/* Filtros */}
-                <div className="bg-white rounded-lg shadow p-4">
+                <div className="bg-white rounded-lg shadow p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-semibold text-gray-700">Filtrar por ubicación</h3>
+                    {user && (
+                      <button
+                        onClick={() => {
+                          setSmartFiltersActive(!smartFiltersActive);
+                          if (!smartFiltersActive) {
+                            setFiltroProvincia("todas");
+                            setFiltroCiudad("todas");
+                          }
+                        }}
+                        className={`text-xs font-medium px-2 py-1 rounded-full transition-colors ${smartFiltersActive ? 'bg-eco-primary/10 text-eco-primary' : 'bg-gray-100 text-gray-500'}`}
+                      >
+                        {smartFiltersActive ? "✨ Inteligente activado" : "Activar Feed Inteligente"}
+                      </button>
+                    )}
+                  </div>
+
                   <div className="flex items-center gap-2">
                     <Select value={filtroCategoria} onValueChange={setFiltroCategoria}>
                       <SelectTrigger className="flex-1">
-                        <SelectValue placeholder="Filtrar por categoría" />
+                        <SelectValue placeholder="Categoría" />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="todas">Todas las categorías</SelectItem>
@@ -693,7 +781,35 @@ export default function DashboardPage() {
                         <SelectItem value="contaminacion">Contaminación</SelectItem>
                       </SelectContent>
                     </Select>
+
+                    <Select
+                      value={filtroProvincia}
+                      onValueChange={(val) => {
+                        setFiltroProvincia(val);
+                        setFiltroCiudad("todas");
+                        if (val !== "todas") setSmartFiltersActive(false);
+                      }}
+                    >
+                      <SelectTrigger className="flex-1">
+                        <SelectValue placeholder="Provincia" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="todas">Todas las provincias</SelectItem>
+                        {provincias.map((p: any) => (
+                          <SelectItem key={p.id_provincia} value={p.id_provincia.toString()}>
+                            {p.nombre}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
+
+                  {smartStatus && (
+                    <div className="flex items-center gap-2 text-xs text-eco-primary-dark bg-eco-primary/5 p-2 rounded-md animate-in fade-in slide-in-from-top-1">
+                      <TrendingUp className="w-3.5 h-3.5" />
+                      {smartStatus}
+                    </div>
+                  )}
                 </div>
 
                 {/* Lista de reportes estilo posts de Facebook */}
@@ -713,14 +829,10 @@ export default function DashboardPage() {
                         {/* Header del post */}
                         <div className="p-4 flex items-center justify-between">
                           <div className="flex items-center gap-3">
-                            <Avatar className="w-10 h-10">
-                              <AvatarFallback className="bg-eco-secondary text-white">
-                                {alerta.autor
-                                  .split(" ")
-                                  .map((n) => n[0])
-                                  .join("")}
-                              </AvatarFallback>
-                            </Avatar>
+                            <UserAvatar
+                              nombre={alerta.autor}
+                              className="w-10 h-10"
+                            />
                             <div>
                               <p className="font-semibold text-gray-900">{alerta.autor}</p>
                               <div className="flex items-center gap-2 text-xs text-gray-500">

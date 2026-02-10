@@ -13,6 +13,9 @@ interface User {
     avatar?: string;
     nivel?: string;
     id_ciudad?: number;
+    id_provincia?: number;
+    ciudad_nombre?: string;
+    provincia_nombre?: string;
     ciudad?: string;
     provincia?: string;
 }
