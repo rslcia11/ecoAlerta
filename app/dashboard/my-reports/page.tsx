@@ -44,8 +44,7 @@ const CATEGORY_MAP: Record<number, string> = {
     3: "contaminacion",
     4: "ruido",
     5: "fauna",
-    6: "aire",
-    7: "infraestructura"
+    
 };
 
 const CATEGORY_NAMES: Record<string, string> = {
@@ -53,9 +52,8 @@ const CATEGORY_NAMES: Record<string, string> = {
     deforestacion: "Tala de árboles",
     contaminacion: "Contaminación de río o quebrada",
     ruido: "Ruido excesivo",
-    fauna: "Fauna urbana herida",
-    aire: "Contaminación del aire",
-    infraestructura: "Infraestructura en mal estado"
+    fauna: "Fauna urbana herida"
+    
 };
 
 const iconosCategoria: Record<string, any> = {
@@ -64,9 +62,8 @@ const iconosCategoria: Record<string, any> = {
     quema: Flame,
     deforestacion: TreePine,
     contaminacion: Droplets,
-    ruido: AlertCircle,
-    aire: AlertCircle,
-    infraestructura: Home
+    ruido: AlertCircle
+    
 }
 
 const coloresEstado: Record<string, string> = {
