@@ -130,9 +130,7 @@ const CATEGORY_MAP: Record<number, string> = {
   2: "deforestacion",    // Tala de árboles
   3: "contaminacion",    // Contaminación de río o quebrada
   4: "ruido",            // Ruido excesivo
-  5: "fauna",            // Fauna urbana herida
-  6: "aire",             // Contaminación del aire
-  7: "infraestructura"   // Infraestructura en mal estado
+  5: "fauna"           // Fauna urbana herida
 };
 
 // Iconos por categoría (Map keys to IDs for easier lookup or mapped strings)
@@ -143,8 +141,6 @@ const iconosCategoria: Record<string, any> = {
   deforestacion: TreePine,
   contaminacion: Droplets,
   ruido: AlertCircle, // Fallback
-  aire: AlertCircle, // Fallback
-  infraestructura: Home // Fallback
 }
 
 // Colores por estado
