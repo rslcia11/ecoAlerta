@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/app/context/AuthContext"
 import api from "@/app/services/api"
@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { AlertCircle, ArrowLeft, Upload, MapPin, Loader2 } from "lucide-react"
 import dynamic from "next/dynamic"
+import { useToast } from "@/components/ui/use-toast"
 
 const LocationPicker = dynamic(() => import("@/components/ui/LocationPicker"), { ssr: false })
 import { VoiceCommandButton } from "@/components/ui/VoiceCommandButton"
@@ -23,6 +24,7 @@ interface Categoria {
 export default function NewReportPage() {
     const router = useRouter()
     const { user } = useAuth()
+    const { toast } = useToast()
     const [loading, setLoading] = useState(false)
     const [categorias, setCategorias] = useState<Categoria[]>([])
     const [provincias, setProvincias] = useState<any[]>([])
@@ -38,9 +40,9 @@ export default function NewReportPage() {
     })
 
     // Construct default search query from user profile
-    const userLocationQuery = user?.ciudad && user?.provincia
+    const userLocationQuery = useMemo(() => user?.ciudad && user?.provincia
         ? `${user.ciudad}, ${user.provincia}, Ecuador`
-        : "Loja, Ecuador";
+        : "Loja, Ecuador", [user?.ciudad, user?.provincia]);
 
     const [files, setFiles] = useState<FileList | null>(null)
     const [previewUrl, setPreviewUrl] = useState<string | null>(null)
@@ -114,30 +116,86 @@ export default function NewReportPage() {
                     <h1 className="text-2xl font-bold text-gray-900 flex-1">Nuevo Reporte</h1>
                     <VoiceCommandButton
                         onCommandDetected={(transcript) => {
-                            const lower = transcript.toLowerCase();
+                            console.log("--- START Voice Command Processing ---");
+                            console.log("Transcript:", transcript);
 
-                            // 1. Simple keyword mapping
-                            const keywords: Record<string, string[]> = {
-                                "incendio": ["fuego", "humo", "quema", "incendio"],
-                                "basura": ["basura", "desecho", "contaminacion", "botadero"],
-                                "agua": ["agua", "rio", "vertido", "derrame"],
-                                "tala": ["arbol", "bosque", "tala", "deforestacion"],
-                                "fauna": ["animal", "especie", "caza", "fauna"]
-                            };
-
-                            for (const [key, terms] of Object.entries(keywords)) {
-                                if (terms.some(t => lower.includes(t))) {
-                                    // Find category by name
-                                    const cat = categorias.find(c => c.nombre.toLowerCase().includes(key));
-                                    if (cat) {
-                                        setFormData(prev => ({ ...prev, id_categoria: cat.id_categoria.toString() }));
-                                    }
-                                    break;
-                                }
+                            if (categorias.length === 0) {
+                                console.warn("Categories array is EMPTY. Fetch might still be in progress.");
+                                toast({
+                                    title: "Error de sincronización",
+                                    description: "Las categorías aún no se han cargado. Inténtalo en un segundo.",
+                                    variant: "destructive"
+                                });
+                                return;
                             }
 
-                            // 2. Set description
-                            setFormData(prev => ({ ...prev, descripcion: transcript }));
+                            const normalizedTranscript = transcript.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
+                            const keywords: Record<string, string[]> = {
+                                "incendio": ["fuego", "humo", "quema", "incendio", "incendios", "forestal", "quemando", "llama"],
+                                "basura": ["basura", "desecho", "contaminacion", "botadero", "residuos", "sucio", "bolsas"],
+                                "agua": ["agua", "rio", "vertido", "derrame", "aceite", "petroleo", "quebrada", "liquido"],
+                                "tala": ["arbol", "bosque", "tala", "deforestacion", "madera", "motosierra", "cortando"],
+                                "fauna": ["animal", "especie", "caza", "fauna", "perro", "gato", "peligro", "mascota", "pajaro"]
+                            };
+
+                            let matchedCategory: Categoria | undefined = undefined;
+
+                            // 1. Direct Match: Transcript contains exactly a category name?
+                            matchedCategory = categorias.find(cat => {
+                                const normalizedCatName = cat.nombre.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                                return normalizedTranscript.includes(normalizedCatName);
+                            });
+
+                            // 2. Semantic Match: Both share common keywords?
+                            if (!matchedCategory) {
+                                matchedCategory = categorias.find(cat => {
+                                    const normalizedName = cat.nombre.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
+                                    for (const [groupKey, terms] of Object.entries(keywords)) {
+                                        const tInGroup = terms.some(t => normalizedTranscript.includes(t)) || normalizedTranscript.includes(groupKey);
+                                        const cInGroup = terms.some(t => normalizedName.includes(t)) || normalizedName.includes(groupKey);
+
+                                        if (tInGroup && cInGroup) {
+                                            console.log(`Match detected! [${transcript}] matched group [${groupKey}] which matches DB category [${cat.nombre}]`);
+                                            return true;
+                                        }
+                                    }
+                                    return false;
+                                });
+                            }
+
+                            // 3. Last Resort: Any overlap in significant words?
+                            if (!matchedCategory) {
+                                const transcriptWords = normalizedTranscript.split(/\s+/).filter(w => w.length > 3);
+                                matchedCategory = categorias.find(cat => {
+                                    const normalizedName = cat.nombre.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                                    return transcriptWords.some(word => normalizedName.includes(word));
+                                });
+                                if (matchedCategory) console.log("Matched via word overlap (last resort):", matchedCategory.nombre);
+                            }
+
+                            // Update State (Consolidated)
+                            setFormData(prev => ({
+                                ...prev,
+                                id_categoria: matchedCategory ? matchedCategory.id_categoria.toString() : prev.id_categoria,
+                                descripcion: transcript
+                            }));
+
+                            if (matchedCategory) {
+                                toast({
+                                    title: "Categoría Seleccionada",
+                                    description: `Detectado: ${matchedCategory.nombre}`,
+                                });
+                            } else {
+                                console.warn("COULD NOT MATCH CATEGORY. Available DB relative names:", categorias.map(c => c.nombre));
+                                toast({
+                                    title: "Reporte Capturado",
+                                    description: "Descripción llena. Por favor selecciona la categoría manual.",
+                                    variant: "destructive"
+                                });
+                            }
+                            console.log("--- END Voice Command Processing ---");
                         }}
                     />
                 </div>
@@ -182,7 +240,7 @@ export default function NewReportPage() {
                     <div className="space-y-2">
                         <Label>Ubicación del incidente</Label>
                         <LocationPicker
-                            onLocationSelect={async (lat, lng, address, provinciaName, ciudadName) => {
+                            onLocationSelect={useCallback(async (lat: number, lng: number, address?: string, provinciaName?: string, ciudadName?: string) => {
                                 let provinciaId = "";
                                 let ciudadId = "";
 
@@ -216,7 +274,7 @@ export default function NewReportPage() {
                                     id_provincia: provinciaId,
                                     id_ciudad: ciudadId
                                 }))
-                            }}
+                            }, [provincias])}
                             defaultSearchQuery={userLocationQuery}
                         />
                         {/* Hidden inputs to ensure form submission still works same way if needed, or just rely on state */}

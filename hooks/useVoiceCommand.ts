@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 
-// Types for Web Speech API (since they are not standard in TS yet)
 interface SpeechRecognitionEvent extends Event {
     results: {
         [index: number]: {
@@ -34,8 +33,21 @@ export const useVoiceCommand = ({ onCommand, lang = "es-ES" }: UseVoiceCommandPr
     const [isListening, setIsListening] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const recognitionRef = useRef<SpeechRecognition | null>(null);
+    const onCommandRef = useRef(onCommand);
+
+    // Update ref when onCommand changes without triggering useEffect
+    const [isSupported, setIsSupported] = useState(false);
 
     useEffect(() => {
+        if (typeof window !== "undefined") {
+            const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+            setIsSupported(!!SpeechRecognition);
+        }
+    }, []);
+
+    useEffect(() => {
+        if (typeof window === "undefined") return;
+
         const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
 
         if (!SpeechRecognition) {
@@ -50,7 +62,7 @@ export const useVoiceCommand = ({ onCommand, lang = "es-ES" }: UseVoiceCommandPr
 
         recognition.onresult = (event: SpeechRecognitionEvent) => {
             const transcript = event.results[0][0].transcript;
-            onCommand(transcript);
+            onCommandRef.current(transcript);
         };
 
         recognition.onerror = (event: any) => {
@@ -64,9 +76,19 @@ export const useVoiceCommand = ({ onCommand, lang = "es-ES" }: UseVoiceCommandPr
         };
 
         recognitionRef.current = recognition;
-    }, [lang, onCommand]);
+
+        return () => {
+            recognition.stop();
+        };
+    }, [lang]);
+
+    // Update ref when onCommand changes without triggering useEffect
+    useEffect(() => {
+        onCommandRef.current = onCommand;
+    }, [onCommand]);
 
     const startListening = useCallback(() => {
+        if (typeof window === "undefined") return;
         if (recognitionRef.current && !isListening) {
             setError(null);
             try {
@@ -85,6 +107,7 @@ export const useVoiceCommand = ({ onCommand, lang = "es-ES" }: UseVoiceCommandPr
     }, [isListening]);
 
     const stopListening = useCallback(() => {
+        if (typeof window === "undefined") return;
         if (recognitionRef.current && isListening) {
             recognitionRef.current.stop();
             setIsListening(false);
@@ -96,6 +119,6 @@ export const useVoiceCommand = ({ onCommand, lang = "es-ES" }: UseVoiceCommandPr
         startListening,
         stopListening,
         error,
-        isSupported: !!((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition)
+        isSupported
     };
 };

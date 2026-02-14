@@ -64,6 +64,7 @@ Para esta fase se utilizó asistencia de IA como copiloto técnico bajo una supe
 1. **Soportabilidad de Navegador**: Durante el desarrollo, la IA propuso usar la API estándar de forma directa. Se corrigió manualmente integrando `webkitSpeechRecognition` para asegurar compatibilidad en iOS y Chrome móvil.
 2. **Ciclo de Vida de Leaflet**: Se evitó que la actualización del estado por voz reiniciara el mapa de Leaflet (un error común de re-renderizado), moviendo la lógica al nivel superior del formulario.
 3. **Filtro de Normalización**: Se añadió manualmente una función de normalización de cadenas (Unicode NFD) para que comandos con tildes (ej. "incendio") fueran detectados correctamente por el motor de búsqueda de categorías.
+4. **Estabilidad del Mapa (Leaflet)**: Se identificó y resolvió un error de `appendChild` en el componente de mapa. Se estabilizaron los imports de `react-leaflet` y se aplicó memoización (`useCallback`) en el componente padre para evitar re-renders innecesarios del mapa durante el uso de la voz.
 
 ## 5. Conclusiones Técnicas y Limitaciones
 
