@@ -13,6 +13,7 @@ import { AlertCircle, ArrowLeft, Upload, MapPin, Loader2 } from "lucide-react"
 import dynamic from "next/dynamic"
 
 const LocationPicker = dynamic(() => import("@/components/ui/LocationPicker"), { ssr: false })
+import { VoiceCommandButton } from "@/components/ui/VoiceCommandButton"
 
 interface Categoria {
     id_categoria: number;
@@ -110,7 +111,35 @@ export default function NewReportPage() {
                     <Button variant="ghost" size="icon" onClick={() => router.back()}>
                         <ArrowLeft className="w-5 h-5" />
                     </Button>
-                    <h1 className="text-2xl font-bold text-gray-900">Nuevo Reporte</h1>
+                    <h1 className="text-2xl font-bold text-gray-900 flex-1">Nuevo Reporte</h1>
+                    <VoiceCommandButton
+                        onCommandDetected={(transcript) => {
+                            const lower = transcript.toLowerCase();
+
+                            // 1. Simple keyword mapping
+                            const keywords: Record<string, string[]> = {
+                                "incendio": ["fuego", "humo", "quema", "incendio"],
+                                "basura": ["basura", "desecho", "contaminacion", "botadero"],
+                                "agua": ["agua", "rio", "vertido", "derrame"],
+                                "tala": ["arbol", "bosque", "tala", "deforestacion"],
+                                "fauna": ["animal", "especie", "caza", "fauna"]
+                            };
+
+                            for (const [key, terms] of Object.entries(keywords)) {
+                                if (terms.some(t => lower.includes(t))) {
+                                    // Find category by name
+                                    const cat = categorias.find(c => c.nombre.toLowerCase().includes(key));
+                                    if (cat) {
+                                        setFormData(prev => ({ ...prev, id_categoria: cat.id_categoria.toString() }));
+                                    }
+                                    break;
+                                }
+                            }
+
+                            // 2. Set description
+                            setFormData(prev => ({ ...prev, descripcion: transcript }));
+                        }}
+                    />
                 </div>
 
                 <form onSubmit={handleSubmit} className="p-6 space-y-6">
